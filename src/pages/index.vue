@@ -28,6 +28,7 @@
     </template>
   </AHeader>
   <div
+    ref="media-list"
     class="pt-20 h-dvh flex flex-col justify-start items-stretch h-100 p-8 gap-4 overflow-y-auto"
   >
     <UCard v-for="file in visibleFiles" :key="file.name">
@@ -227,7 +228,11 @@ const closeCropModal = () => {
 const modal = useModal();
 const openDirectoryModal = () => {
   modal.open(DirectoryModal, {
-    onSave: () => resetPage,
+    directory: fileStore.directory,
+    onSave: () => {
+      modal.close();
+      resetPage();
+    },
   });
 };
 
@@ -242,6 +247,7 @@ onMounted(async () => {
 });
 
 const observing = ref(false);
+const mediaRef = useTemplateRef("media-list");
 const pageBinder = useTemplateRef("page-binder");
 const observer = new IntersectionObserver((entries) => {
   if (entries[0].isIntersecting) {
@@ -261,6 +267,8 @@ const analyzeDirectory = async () => {
 };
 
 const resetPage = async () => {
+  console.log(mediaRef.value);
+  if (mediaRef.value) mediaRef.value.scrollTo({ top: 0, behavior: "smooth" });
   fileStore.visibilityLimit = 20;
   bindPage();
 };

@@ -30,6 +30,7 @@
         <UButton
           color="gray"
           variant="solid"
+          :disabled="loading"
           @click="() => console.log('clicked')"
         >
           Browse
@@ -38,7 +39,9 @@
 
       <template #footer>
         <div class="flex justify-end gap-4">
-          <UButton @click="onSave">Save</UButton>
+          <UButton :loading="loading" :disabled="loading" @click="onSave">
+            Save
+          </UButton>
         </div>
       </template>
     </UCard>
@@ -52,11 +55,35 @@ const { store } = useRecall();
 import { useFiles } from "@/pinia/files";
 const files = useFiles();
 
+const props = defineProps<{
+  directory: string;
+}>();
 const emit = defineEmits(["save"]);
+onMounted(() => {
+  loading.value = false;
+  current.value = props.directory;
+  updateDirectoryList();
+});
 
 const open = ref(false);
 const current = ref<string>("");
 const options = ref<string[]>([]);
+const loading = ref(false);
+
+const updateDirectoryList = async () => {
+  // determine the current directory by splitting the current value to the last slash
+  const dir = current.value.split("/").slice(0, -1).join("/");
+
+  // fetch directories from the server based on the current value
+  // and update the options
+  files.fetchDirectories(dir).then((res: string[]) => {
+    const opts: string[] = [];
+    res.forEach((inner) => {
+      opts.push(`${dir}/${inner}`);
+    });
+    options.value = opts;
+  });
+};
 
 // on input, if the value ends in a slash, update the current value and fetch directories from the server
 const onInput = (e: Event) => {
@@ -64,17 +91,12 @@ const onInput = (e: Event) => {
   current.value = target.value;
 
   if (current.value.endsWith("/")) {
-    files.fetchDirectories(current.value).then((res: string[]) => {
-      const opts: string[] = [];
-      res.forEach((dir) => {
-        opts.push(current.value + dir);
-      });
-      options.value = opts;
-    });
+    updateDirectoryList();
   }
 };
 
 const onSave = async () => {
+  loading.value = true;
   await files.setDirectory(current.value);
   store("directory", current.value);
 
