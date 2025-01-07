@@ -1,6 +1,25 @@
 <template>
   <AHeader>
-    <h1>Image Tagger</h1>
+    <template #left>
+      <h1>Image Tagger</h1>
+    </template>
+
+    <div class="flex flex-row gap-4">
+      <UButton
+        :color="mode === 'view' ? 'primary' : 'white'"
+        variant="link"
+        @click="mode = 'view'"
+      >
+        View
+      </UButton>
+      <UButton
+        :color="mode === 'tag' ? 'primary' : 'white'"
+        variant="link"
+        @click="mode = 'tag'"
+      >
+        Tag
+      </UButton>
+    </div>
 
     <template #right>
       <UButton @click="openDirectoryModal" variant="solid">
@@ -8,7 +27,9 @@
       </UButton>
     </template>
   </AHeader>
-  <div class="flex flex-col justify-start items-stretch h-100 p-8 gap-4">
+  <div
+    class="pt-20 h-dvh flex flex-col justify-start items-stretch h-100 p-8 gap-4 overflow-y-auto"
+  >
     <UCard v-for="file in visibleFiles" :key="file.name">
       <div class="grid items-center grid-cols-4">
         <div

@@ -11,5 +11,6 @@ html {
 
 body {
   height: 100dvh;
+  overflow: hidden;
 }
 </style>
