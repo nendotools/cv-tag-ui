@@ -4,6 +4,9 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   srcDir: "src",
   ssr: false,
+  runtimeConfig: {
+    pythonUtilPath: process.env.PYTHON_UTIL_PATH,
+  },
 
   modules: ["@pinia/nuxt", "@nuxt/ui"],
   ui: {
@@ -25,4 +28,3 @@ export default defineNuxtConfig({
     },
   },
 });
-

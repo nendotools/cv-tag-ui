@@ -4,6 +4,7 @@ interface State {
   directory: string;
   files: ImageFile[];
   loadingMedia: boolean;
+  visibilityLimit: number;
 }
 
 export const useFiles = defineStore("files", {
@@ -11,8 +12,28 @@ export const useFiles = defineStore("files", {
     directory: "",
     files: [],
     loadingMedia: false,
+    visibilityLimit: 20,
   }),
+
+  getters: {
+    visibleFiles(state: State) {
+      return state.files.slice(0, state.visibilityLimit);
+    },
+    hasNonSquareFiles(state: State) {
+      return state.files.some(
+        (f) => f.dimensions.width !== f.dimensions.height,
+      );
+    },
+  },
+
   actions: {
+    async resetFiles() {
+      this.files = [];
+      this.visibilityLimit = 20;
+    },
+    async expandVisibility() {
+      this.visibilityLimit += 20;
+    },
     async fetchDirectories(path: string) {
       // use POST method to send data to the server
       const directories = await $fetch<{
@@ -59,6 +80,46 @@ export const useFiles = defineStore("files", {
       return response;
     },
 
+    async addTag(file: ImageFile, tag: string) {
+      const fileIndex = this.files.findIndex((f) => f.path === file.path);
+      if (fileIndex !== -1) {
+        this.files[fileIndex].highConfidenceTags.push(tag);
+        this.files[fileIndex].lowConfidenceTags = this.files[
+          fileIndex
+        ].lowConfidenceTags.filter((t) => t !== tag);
+      }
+      console.log("Adding tag", tag, "to", file.path);
+
+      // update server
+      await $fetch("/api/tags", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: { path: file.path, add: [tag], remove: [] },
+      });
+    },
+
+    async removeTag(file: ImageFile, tag: string) {
+      const fileIndex = this.files.findIndex((f) => f.path === file.path);
+      if (fileIndex !== -1) {
+        this.files[fileIndex].highConfidenceTags = this.files[
+          fileIndex
+        ].highConfidenceTags.filter((t) => t !== tag);
+        this.files[fileIndex].lowConfidenceTags.push(tag);
+      }
+      console.log("Removing tag", tag, "from", file.path);
+
+      // update server
+      await $fetch("/api/tags", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: { path: file.path, add: [], remove: [tag] },
+      });
+    },
+
     async deleteFile(filePath: string) {
       this.files = this.files.filter((f) => f.path !== filePath);
       await fetch("/api/files", {
@@ -68,6 +129,44 @@ export const useFiles = defineStore("files", {
         },
         body: JSON.stringify({ path: filePath }),
       });
+    },
+
+    async analyzeImage(file: ImageFile) {
+      console.log(`Analyzing image: ${file.path}`);
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ filePath: file.path }),
+      });
+      const json = await response.json();
+      file.highConfidenceTags = Object.keys(json[file.path].high_tags);
+      file.lowConfidenceTags = Object.keys(json[file.path].low_tags);
+
+      const fileIndex = this.files.findIndex((f) => f.path === file.path);
+      if (fileIndex !== -1) {
+        this.files[fileIndex] = file;
+      }
+    },
+
+    async analyzeDirectory() {
+      console.log("Analyzing all images");
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ folderPath: this.directory }),
+      });
+      const json: Record<string, any> = await response.json();
+      for (const item in json) {
+        const fileId = this.files.findIndex((f) => f.path === item);
+        this.files[fileId].highConfidenceTags = Object.keys(
+          json[item].high_tags,
+        );
+        this.files[fileId].lowConfidenceTags = Object.keys(json[item].low_tags);
+      }
     },
   },
 });

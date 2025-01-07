@@ -26,18 +26,20 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // skip non-image and non-txt files
-    if (!file.name.toLowerCase().match(/\.(jpg|jpeg|png|bmp|txt)$/)) {
+    if (!file.name.toLowerCase().match(/\.(jpg|jpeg|png|bmp|txt|json)$/)) {
       console.log(`Skipping ${file.name}`);
       continue;
     }
 
     const type = file.name.split(".").pop();
-    const baseName = file.name.replace(/\.(jpg|jpeg|png|bmp|txt)$/i, "");
+    const baseName = file.name.replace(/\.(jpg|jpeg|png|bmp|txt|json)$/i, "");
     const image: ImageFile = files[baseName] ?? {
       path: `${path}/${file.name}`,
-      name: type === "txt" ? "" : file.name,
+      name: ["txt", "json"].includes(type || "") ? "" : file.name,
       dimensions: { width: 0, height: 0 },
       tags: [],
+      highConfidenceTags: [],
+      lowConfidenceTags: [],
     };
 
     // parse the txt file as an array from CSV
@@ -51,6 +53,10 @@ export default defineEventHandler(async (event: H3Event) => {
         }
       }
       image.tags = tags;
+    } else if (file.name.endsWith(".json")) {
+      const json = JSON.parse(fs.readFileSync(`${path}/${file.name}`, "utf-8"));
+      image.highConfidenceTags = Object.keys(json.high_tags);
+      image.lowConfidenceTags = Object.keys(json.low_tags);
     } else {
       try {
         const dims = imageSize(`${path}/${file.name}`);

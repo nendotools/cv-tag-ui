@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model="open">
+  <UModal>
     <UCard
       :ui="{
         ring: '',
@@ -51,13 +51,10 @@ const { store } = useRecall();
 
 import { useFiles } from "@/pinia/files";
 const files = useFiles();
-defineProps({
-  show: Boolean,
-});
 
 const emit = defineEmits(["save"]);
 
-const open = ref(true);
+const open = ref(false);
 const current = ref<string>("");
 const options = ref<string[]>([]);
 

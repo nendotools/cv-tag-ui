@@ -1,77 +1,97 @@
 <template>
   <AHeader>
     <h1>Image Tagger</h1>
+
+    <template #right>
+      <UButton @click="openDirectoryModal" variant="solid">
+        Change Directory
+      </UButton>
+    </template>
   </AHeader>
   <div class="flex flex-col justify-start items-stretch h-100 p-8 gap-4">
     <UCard v-for="file in visibleFiles" :key="file.name">
-      <div class="flex items-center justify-between overflow-scroll">
-        <div class="flex items-center">
+      <div class="grid items-center grid-cols-4">
+        <div
+          class="relative flex flex-col items-center justify-center overflow-hidden col-span-1"
+        >
+          <img
+            :src="file.resource"
+            style="height: 100%; width: 100%; object-fit: contain"
+          />
           <div
-            class="relative flex flex-col items-center justify-center h-72 w-72 min-w-72 overflow-hidden"
+            id="hover-menu"
+            class="absolute w-full h-full bg-zinc-900/40 opacity-0 hover:opacity-100 flex flex-row gap-2 items-center justify-center transition ease-in-out duration-300"
           >
-            <img
-              :src="file.resource"
-              style="height: 100%; width: 100%; object-fit: contain"
+            <UTooltip text="Make Square">
+              <UButton
+                :color="isSquare(file) ? 'white' : 'emerald'"
+                class="rounded-full p-4"
+                variant="solid"
+                :disabled="isSquare(file)"
+                @click="attemptMakeSquare(file)"
+              >
+                <UIcon
+                  name="fluent:color-background-24-filled"
+                  class="w-6 h-6"
+                />
+              </UButton>
+            </UTooltip>
+            <UTooltip text="Crop Image">
+              <UButton
+                color="emerald"
+                class="rounded-full p-4"
+                variant="solid"
+                @click="cropTarget = file"
+              >
+                <UIcon name="fluent:crop-16-regular" class="w-6 h-6" />
+              </UButton>
+            </UTooltip>
+            <UTooltip text="Delete Image">
+              <UButton
+                color="red"
+                class="rounded-full p-4"
+                variant="solid"
+                @click="deleteFile(file)"
+              >
+                <UIcon name="fluent:delete-16-regular" class="w-6 h-6" />
+              </UButton>
+            </UTooltip>
+          </div>
+        </div>
+
+        <div class="ml-4 col-start-2 col-span-3">
+          <p class="text-sm font-semibold">{{ file.name }}</p>
+          <p class="text-xs text-gray-500">{{ file.path }}</p>
+          <UButton @click="fileStore.analyzeImage(file)" variant="solid">
+            Analyze
+          </UButton>
+          <h4>Accepted Tags</h4>
+          <div class="ml-4 flex flex-row flex-wrap gap-4 m-4">
+            <ATag
+              v-for="tag in file.highConfidenceTags.length
+                ? file.highConfidenceTags
+                : file.tags"
+              :key="tag"
+              :label="tag"
+              :exists="true"
+              @delete="fileStore.removeTag(file, tag)"
             />
-            <div
-              id="hover-menu"
-              class="absolute w-full h-full bg-zinc-900/40 opacity-0 hover:opacity-100 flex flex-row gap-2 items-center justify-center transition ease-in-out duration-300"
-            >
-              <UTooltip text="Make Square">
-                <UButton
-                  :color="isSquare(file) ? 'white' : 'emerald'"
-                  class="rounded-full p-4"
-                  variant="solid"
-                  :disabled="isSquare(file)"
-                  @click="attemptMakeSquare(file)"
-                >
-                  <UIcon
-                    name="fluent:color-background-24-filled"
-                    class="w-6 h-6"
-                  />
-                </UButton>
-              </UTooltip>
-              <UTooltip text="Crop Image">
-                <UButton
-                  color="emerald"
-                  class="rounded-full p-4"
-                  variant="solid"
-                  @click="cropTarget = file"
-                >
-                  <UIcon name="fluent:crop-16-regular" class="w-6 h-6" />
-                </UButton>
-              </UTooltip>
-              <UTooltip text="Delete Image">
-                <UButton
-                  color="red"
-                  class="rounded-full p-4"
-                  variant="solid"
-                  @click="deleteFile(file)"
-                >
-                  <UIcon name="fluent:delete-16-regular" class="w-6 h-6" />
-                </UButton>
-              </UTooltip>
+
+            <div v-if="!file.tags.length && !file?.highConfidenceTags?.length">
+              <p class="text-zinc-50/25">None</p>
             </div>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-semibold">{{ file.name }}</p>
-            <p class="text-xs text-gray-500">{{ file.path }}</p>
-            <h4>Accepted Tags</h4>
-            <div class="ml-4 flex flex-row flex-wrap gap-4 m-4">
-              <div
-                v-for="tag in file.tags"
-                :key="tag"
-                class="text-zinc-900 bg-teal-50 rounded-full px-2 py-1 text-xs w-max"
-              >
-                {{ tag }}
-              </div>
+          <h4>Excluded Tags</h4>
+          <div class="ml-4 flex flex-row flex-wrap gap-4 m-4">
+            <ATag
+              v-for="tag in [...file?.lowConfidenceTags]"
+              :key="tag"
+              :label="tag"
+              :exists="false"
+              @add="fileStore.addTag(file, tag)"
+            />
 
-              <div v-if="!file.tags.length">
-                <p class="text-zinc-50/25">None</p>
-              </div>
-            </div>
-            <h4>Rejected Tags</h4>
-            <div class="ml-4 flex flex-row flex-wrap gap-4 m-4">
+            <div v-if="!file?.lowConfidenceTags?.length">
               <p class="text-zinc-50/25">None</p>
             </div>
           </div>
@@ -89,9 +109,45 @@
         class="w-5 h-5 text-primary-500"
       />
     </div>
+
+    <!-- Bottom Rounded Toolbar -->
+    <div class="fixed flex justify-center gap-8 bottom-6 left-0 right-0">
+      <div
+        class="p-2 bg-slate-950/90 rounded-full shadow-lg shadow-black/25 z-10"
+      >
+        <div class="flex justify-center items-center gap-4">
+          <UTooltip
+            text="Make All Square"
+            :popper="{ arrow: true, placement: 'top' }"
+          >
+            <UButton
+              icon="fluent:color-background-24-filled"
+              variant="solid"
+              size="xl"
+              :color="fileStore.hasNonSquareFiles ? 'emerald' : 'white'"
+              :disabled="!fileStore.hasNonSquareFiles"
+              class="rounded-full p-4"
+              @click="makeAllSquare"
+            />
+          </UTooltip>
+          <UTooltip
+            text="Scan Directory"
+            :popper="{ arrow: true, placement: 'top' }"
+          >
+            <UButton
+              icon="fluent:slide-multiple-search-20-regular"
+              variant="solid"
+              size="xl"
+              class="rounded-full p-4"
+              @click="analyzeDirectory"
+            />
+          </UTooltip>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <DirectoryModal :show="showDirectoryModal" @save="resetPage" />
+  <UModals />
   <CropModal
     :open="!!cropTarget"
     :image="cropTarget"
@@ -103,6 +159,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 
+import ATag from "~/components/ui/ATag.vue";
 import AHeader from "~/components/ui/AHeader.vue";
 import CropModal from "~/components/ui/CropModal.vue";
 import DirectoryModal from "~/components/ui/DirectoryModal.vue";
@@ -112,7 +169,7 @@ const { recall } = useRecall();
 
 import { useFiles } from "@/pinia/files";
 const fileStore = useFiles();
-const { files } = storeToRefs(fileStore);
+const { files, visibleFiles } = storeToRefs(fileStore);
 
 import { useMakeSquare } from "#build/imports";
 const { makeSquare } = useMakeSquare();
@@ -123,14 +180,20 @@ const closeCropModal = () => {
   console.log("closed");
 };
 
-const showDirectoryModal = ref(false);
+const modal = useModal();
+const openDirectoryModal = () => {
+  modal.open(DirectoryModal, {
+    onSave: () => resetPage,
+  });
+};
+
 onMounted(async () => {
   const directory = recall("directory");
   if (directory) {
     await fileStore.setDirectory(directory);
     resetPage();
   } else {
-    showDirectoryModal.value = true;
+    openDirectoryModal();
   }
 });
 
@@ -147,27 +210,23 @@ const isSquare = (file: ImageFile) =>
 
 const deleteFile = (file: ImageFile) => {
   fileStore.deleteFile(file.path);
-  visibleFiles.value = visibleFiles.value.filter((f) => f.path !== file.path);
 };
 
-const visibleFiles = ref<ImageFile[]>([]);
+const analyzeDirectory = async () => {
+  await fileStore.analyzeDirectory();
+};
+
 const resetPage = async () => {
-  visibleFiles.value = [];
+  fileStore.visibilityLimit = 20;
   bindPage();
 };
 
 const bindPage = () => {
-  console.log(files.value.length);
   if (files.value.length > 0) {
-    visibleFiles.value.push(
-      ...files.value.slice(
-        visibleFiles.value.length,
-        visibleFiles.value.length + 20,
-      ),
-    );
+    fileStore.expandVisibility();
   }
 
-  if (visibleFiles.value.length === files.value.length) {
+  if (visibleFiles.value.length >= files.value.length) {
     observer.unobserve(pageBinder.value as unknown as Element);
     observing.value = false;
   }
@@ -180,6 +239,13 @@ const bindPage = () => {
 
 const attemptMakeSquare = (file: ImageFile) => {
   makeSquare(file, resolveImageEdit);
+};
+const makeAllSquare = () => {
+  fileStore.files.forEach((file) => {
+    if (!isSquare(file)) {
+      makeSquare(file, resolveImageEdit);
+    }
+  });
 };
 
 const resolveImageEdit = async (dataUrl: string, file: ImageFile) => {

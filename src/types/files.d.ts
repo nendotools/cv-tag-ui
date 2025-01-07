@@ -10,5 +10,7 @@ declare global {
       height: number;
     };
     tags: string[];
+    highConfidenceTags: string[];
+    lowConfidenceTags: string[];
   }
 }
