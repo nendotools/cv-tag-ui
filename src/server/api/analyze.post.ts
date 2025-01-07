@@ -19,7 +19,7 @@ export default defineEventHandler(async (event: H3Event) => {
       const jsonStr = fs.readFileSync(jsonPath, "utf-8");
       const json = JSON.parse(jsonStr);
       setHeader(event, "Content-Type", "application/json");
-      return json;
+      return { [filePath]: json };
     }
   }
 

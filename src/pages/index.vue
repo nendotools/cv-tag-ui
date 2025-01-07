@@ -22,77 +22,99 @@
             id="hover-menu"
             class="absolute w-full h-full bg-zinc-900/40 opacity-0 hover:opacity-100 flex flex-row gap-2 items-center justify-center transition ease-in-out duration-300"
           >
+            <UTooltip text="Analyze Image">
+              <UButton
+                icon="fluent:image-search-20-regular"
+                color="primary"
+                class="rounded-full p-4"
+                variant="solid"
+                @click="fileStore.analyzeImage(file)"
+              />
+            </UTooltip>
             <UTooltip text="Make Square">
               <UButton
+                icon="fluent:color-background-24-regular"
                 :color="isSquare(file) ? 'white' : 'emerald'"
                 class="rounded-full p-4"
                 variant="solid"
                 :disabled="isSquare(file)"
                 @click="attemptMakeSquare(file)"
-              >
-                <UIcon
-                  name="fluent:color-background-24-filled"
-                  class="w-6 h-6"
-                />
-              </UButton>
+              />
             </UTooltip>
             <UTooltip text="Crop Image">
               <UButton
+                icon="fluent:crop-16-regular"
                 color="emerald"
                 class="rounded-full p-4"
                 variant="solid"
                 @click="cropTarget = file"
-              >
-                <UIcon name="fluent:crop-16-regular" class="w-6 h-6" />
-              </UButton>
+              />
             </UTooltip>
             <UTooltip text="Delete Image">
               <UButton
+                icon="fluent:delete-16-regular"
                 color="red"
                 class="rounded-full p-4"
                 variant="solid"
                 @click="deleteFile(file)"
-              >
-                <UIcon name="fluent:delete-16-regular" class="w-6 h-6" />
-              </UButton>
+              />
             </UTooltip>
           </div>
         </div>
 
-        <div class="ml-4 col-start-2 col-span-3">
+        <!-- File Details -->
+        <div class="flex flex-col ml-4 col-start-2 col-span-3 gap-2">
           <p class="text-sm font-semibold">{{ file.name }}</p>
           <p class="text-xs text-gray-500">{{ file.path }}</p>
-          <UButton @click="fileStore.analyzeImage(file)" variant="solid">
-            Analyze
-          </UButton>
-          <h4>Accepted Tags</h4>
-          <div class="ml-4 flex flex-row flex-wrap gap-4 m-4">
-            <ATag
-              v-for="tag in file.highConfidenceTags.length
-                ? file.highConfidenceTags
-                : file.tags"
-              :key="tag"
-              :label="tag"
-              :exists="true"
-              @delete="fileStore.removeTag(file, tag)"
-            />
+          <div v-if="mode === 'tag'">
+            <h4>Accepted Tags</h4>
+            <div class="ml-4 flex flex-row flex-wrap gap-4 m-4">
+              <ATag
+                v-for="tag in file.highConfidenceTags.length
+                  ? file.highConfidenceTags
+                  : file.tags"
+                :key="tag"
+                :label="tag"
+                :exists="true"
+                @delete="fileStore.removeTag(file, tag)"
+              />
 
-            <div v-if="!file.tags.length && !file?.highConfidenceTags?.length">
-              <p class="text-zinc-50/25">None</p>
+              <div
+                v-if="!file.tags.length && !file?.highConfidenceTags?.length"
+              >
+                <p class="text-zinc-50/25">None</p>
+              </div>
+            </div>
+            <h4>Excluded Tags</h4>
+            <div class="ml-4 flex flex-row flex-wrap gap-4 m-4">
+              <ATag
+                v-for="tag in [...file?.lowConfidenceTags]"
+                :key="tag"
+                :label="tag"
+                :exists="false"
+                @add="fileStore.addTag(file, tag)"
+              />
+
+              <div v-if="!file?.lowConfidenceTags?.length">
+                <p class="text-zinc-50/25">None</p>
+              </div>
             </div>
           </div>
-          <h4>Excluded Tags</h4>
-          <div class="ml-4 flex flex-row flex-wrap gap-4 m-4">
-            <ATag
-              v-for="tag in [...file?.lowConfidenceTags]"
-              :key="tag"
-              :label="tag"
-              :exists="false"
-              @add="fileStore.addTag(file, tag)"
-            />
-
-            <div v-if="!file?.lowConfidenceTags?.length">
-              <p class="text-zinc-50/25">None</p>
+          <div v-else class="flex flex-col">
+            <h3>
+              Tags
+              <span class="text-primary text-xs text-gray-500">
+                {{ file.tags.length }}
+              </span>
+            </h3>
+            <div class="flex flex-row flex-wrap gap-2">
+              <span
+                v-for="tag in file.tags"
+                :key="tag"
+                class="text-xs text-gray-500 max-content"
+              >
+                {{ tag }}
+              </span>
             </div>
           </div>
         </div>
@@ -174,6 +196,7 @@ const { files, visibleFiles } = storeToRefs(fileStore);
 import { useMakeSquare } from "#build/imports";
 const { makeSquare } = useMakeSquare();
 
+const mode = ref<"view" | "tag">("view");
 const cropTarget = ref<ImageFile | null>(null);
 const closeCropModal = () => {
   cropTarget.value = null;
