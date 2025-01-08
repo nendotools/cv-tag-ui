@@ -23,12 +23,10 @@
 
     <template #right>
       <div class="flex flex-row gap-4">
-        <UButton size="xs" variant="outline" @click="openDirectoryModal">
+        <UButton @click="openDirectoryModal" variant="outline">
           Change Directory
         </UButton>
-        <UButton size="xs" variant="solid" @click="openTagPanel">
-          Tag Panel
-        </UButton>
+        <UButton @click="openTagPanel" variant="solid"> Tag Panel </UButton>
       </div>
     </template>
   </AHeader>
@@ -40,7 +38,6 @@
     >
       <UCard v-for="file in visibleFiles" :key="file.name">
         <div class="grid items-center grid-cols-4">
-          <!-- Image and Image tools -->
           <div
             class="relative flex flex-col items-center justify-center overflow-hidden col-span-1"
           >
@@ -53,14 +50,11 @@
               class="absolute w-full h-full bg-zinc-900/40 opacity-0 hover:opacity-100 flex flex-col items-center justify-center transition ease-in-out duration-300"
             >
               <div class="w-full flex flex-row justify-center gap-2">
-                <UTooltip
-                  text="Analyze Image"
-                  :popper="{ arrow: true, placement: 'top' }"
-                >
+                <UTooltip text="Analyze Image">
                   <UButton
                     icon="fluent:image-search-20-regular"
                     color="primary"
-                    class="rounded-full p-2"
+                    class="rounded-full p-4"
                     variant="solid"
                     size="xs"
                     @click="fileStore.analyzeImage(file)"
@@ -68,28 +62,22 @@
                 </UTooltip>
               </div>
               <div class="w-full flex flex-row justify-center gap-2">
-                <UTooltip
-                  text="Make Square"
-                  :popper="{ arrow: true, placement: 'top' }"
-                >
+                <UTooltip text="Make Square">
                   <UButton
                     icon="fluent:color-background-24-regular"
                     :color="isSquare(file) ? 'white' : 'emerald'"
-                    class="rounded-full p-2"
+                    class="rounded-full p-4"
                     variant="solid"
                     size="xs"
                     :disabled="isSquare(file)"
                     @click="attemptMakeSquare(file)"
                   />
                 </UTooltip>
-                <UTooltip
-                  text="Crop Image"
-                  :popper="{ arrow: true, placement: 'top' }"
-                >
+                <UTooltip text="Crop Image">
                   <UButton
                     icon="fluent:crop-16-regular"
                     color="emerald"
-                    class="rounded-full p-2"
+                    class="rounded-full p-4"
                     variant="solid"
                     size="xs"
                     @click="cropTarget = file"
@@ -97,14 +85,11 @@
                 </UTooltip>
               </div>
               <div class="w-full flex flex-row justify-center gap-2">
-                <UTooltip
-                  text="Delete Image"
-                  :popper="{ arrow: true, placement: 'top' }"
-                >
+                <UTooltip text="Delete Image">
                   <UButton
                     icon="fluent:delete-16-regular"
                     color="red"
-                    class="rounded-full p-2"
+                    class="rounded-full p-4"
                     variant="solid"
                     size="xs"
                     @click="deleteFile(file)"
@@ -118,14 +103,9 @@
           <div class="flex flex-col ml-4 col-start-2 col-span-3 gap-2">
             <p class="text-sm font-semibold">{{ file.name }}</p>
             <p class="text-xs text-gray-500">{{ file.path }}</p>
-            <div>
-              <h4>
-                Applied Tags
-                <span class="text-primary text-xs text-gray-500">
-                  {{ file.highConfidenceTags.length }}
-                </span>
-              </h4>
-              <div class="ml-4 flex flex-row flex-wrap gap-2 m-4">
+            <div v-if="mode === 'tag'">
+              <h4>Accepted Tags</h4>
+              <div class="ml-4 flex flex-row flex-wrap gap-4 m-4">
                 <ATag
                   v-for="tag in file.highConfidenceTags.length
                     ? file.highConfidenceTags
@@ -142,11 +122,8 @@
                   <p class="text-zinc-50/25">None</p>
                 </div>
               </div>
-              <h4 v-show="mode === 'tag'">Excluded Tags</h4>
-              <div
-                v-show="mode === 'tag'"
-                class="ml-4 flex flex-row flex-wrap gap-2 m-4"
-              >
+              <h4>Excluded Tags</h4>
+              <div class="ml-4 flex flex-row flex-wrap gap-4 m-4">
                 <ATag
                   v-for="tag in [...file?.lowConfidenceTags]"
                   :key="tag"
@@ -158,6 +135,23 @@
                 <div v-if="!file?.lowConfidenceTags?.length">
                   <p class="text-zinc-50/25">None</p>
                 </div>
+              </div>
+            </div>
+            <div v-else class="flex flex-col">
+              <h3>
+                Tags
+                <span class="text-primary text-xs text-gray-500">
+                  {{ file.tags.length }}
+                </span>
+              </h3>
+              <div class="flex flex-row flex-wrap gap-2">
+                <span
+                  v-for="tag in file.tags"
+                  :key="tag"
+                  class="text-xs text-gray-500 max-content"
+                >
+                  {{ tag }}
+                </span>
               </div>
             </div>
           </div>
@@ -178,11 +172,9 @@
   </div>
 
   <!-- Bottom Rounded Toolbar -->
-  <div
-    class="fixed flex justify-center gap-8 bottom-6 left-0 right-0 pointer-events-none"
-  >
+  <div class="fixed flex justify-center gap-8 bottom-6 left-0 right-0">
     <div
-      class="p-2 bg-slate-950/90 rounded-full shadow-lg shadow-black/25 z-10 pointer-events-auto"
+      class="p-2 bg-slate-950/90 rounded-full shadow-lg shadow-black/25 z-10"
     >
       <div class="flex justify-center items-center gap-4">
         <UTooltip

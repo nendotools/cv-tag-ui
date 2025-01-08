@@ -1,6 +1,7 @@
 <template>
   <div
-    class="flex flex-row justify-between align-center items-center gap-2 text-zinc-50 bg-teal-50/20 border rounded-full pl-3 px-1 py-1 text-sm"
+    class="flex flex-row justify-between align-center items-center gap-1 text-zinc-50 bg-teal-50/20 border rounded-full pl-2 pr-1 p-0.5 text-xs"
+    :class="`border-${colorBorderClass}-400`"
   >
     <div class="w-max cursor-default select-none">
       {{ label }}
@@ -10,11 +11,11 @@
       icon="fluent:dismiss-12-filled"
       color="red"
       variant="solid"
-      size="2xs"
+      size="xs"
+      class="p-0.5"
       :ui="{
         rounded: 'rounded-full',
-        padding: { '2xs': 'px-1 py-1' },
-        icon: { '2xs': 'w-1 h-1' },
+        icon: { size: { xs: 'h-2 w-2' } },
       }"
       @click="$emit('delete')"
     />
@@ -23,11 +24,11 @@
       icon="fluent:add-12-filled"
       color="emerald"
       variant="solid"
-      size="2xs"
+      size="xs"
+      class="p-0.5"
       :ui="{
         rounded: 'rounded-full',
-        padding: { '2xs': 'px-1 py-1' },
-        icon: { '2xs': 'w-1 h-1' },
+        icon: { size: { xs: 'h-2 w-2' } },
       }"
       @click="$emit('add')"
     />
@@ -35,10 +36,16 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { useTags } from "~/pinia/tags";
+const tagStore = useTags();
+
+const props = defineProps<{
   label: string;
   exists: boolean;
 }>();
 
 defineEmits(["add", "delete"]);
+const colorBorderClass = computed(() => {
+  return tagStore.tagColors[props.label] ?? "slate";
+});
 </script>

@@ -46,11 +46,16 @@ export default defineEventHandler(async (event: H3Event) => {
   if (tagFilePath) {
     const tagCSV = fs.readFileSync(tagFilePath, "utf-8");
     // Parse the tags into an array from CSV: id,tag,category,count
-    // For now, we just want the tags
+    // For now, we just want the tags and category
     const tags = tagCSV
       .split("\n")
-      .map((line) => line.split(",")[1])
-      .filter((tag) => tag !== "");
+      .slice(1)
+      .filter((line) => line !== "")
+      .map((line) => ({
+        label: line.split(",")[1].replaceAll("_", " "),
+        category: Number(line.split(",")[2]),
+      }))
+      .filter((tag) => tag.label !== "");
     return { tags };
   }
   return { tags: [] };
