@@ -22,11 +22,15 @@
     </div>
 
     <template #right>
-      <UButton @click="openDirectoryModal" variant="solid">
-        Change Directory
-      </UButton>
+      <div class="flex flex-row gap-4">
+        <UButton @click="openDirectoryModal" variant="outline">
+          Change Directory
+        </UButton>
+        <UButton @click="openTagPanel" variant="solid"> Tag Panel </UButton>
+      </div>
     </template>
   </AHeader>
+
   <div
     ref="media-list"
     class="pt-20 h-dvh flex flex-col justify-start items-stretch h-100 p-8 gap-4 overflow-y-auto"
@@ -205,6 +209,7 @@
   </div>
 
   <UModals />
+  <USlideovers />
   <CropModal
     :open="!!cropTarget"
     :image="cropTarget"
@@ -221,6 +226,9 @@ import AHeader from "~/components/ui/AHeader.vue";
 import CropModal from "~/components/ui/CropModal.vue";
 import DirectoryModal from "~/components/ui/DirectoryModal.vue";
 
+import { useTags } from "~/pinia/tags";
+const tagStore = useTags();
+
 import { useRecall } from "~/pinia/recall";
 const { recall } = useRecall();
 
@@ -229,6 +237,7 @@ const fileStore = useFiles();
 const { files, visibleFiles } = storeToRefs(fileStore);
 
 import { useMakeSquare } from "#build/imports";
+import TagSlideover from "~/components/ui/TagSlideover.vue";
 const { makeSquare } = useMakeSquare();
 
 const mode = ref<"view" | "tag">("view");
@@ -249,7 +258,13 @@ const openDirectoryModal = () => {
   });
 };
 
+const slideover = useSlideover();
+const openTagPanel = () => {
+  slideover.open(TagSlideover);
+};
+
 onMounted(async () => {
+  tagStore.fetchModels();
   const directory = recall("directory");
   if (directory) {
     await fileStore.setDirectory(directory);

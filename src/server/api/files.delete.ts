@@ -19,6 +19,11 @@ export default defineEventHandler(async (event: H3Event) => {
   if (fs.existsSync(txtPath)) {
     fs.rmSync(txtPath);
   }
+  const jsonPath = path.replace(/\.(jpg|jpeg|png|bmp)$/i, ".json");
+  if (fs.existsSync(jsonPath)) {
+    fs.rmSync(jsonPath);
+  }
+
   setHeader(event, "Status", "200");
   return "success";
 });

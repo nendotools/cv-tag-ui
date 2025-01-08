@@ -169,6 +169,7 @@ export const useFiles = defineStore("files", {
       for (const file of response.files) {
         await this.analyzeImage(file);
       }
+      this.visibilityLimit = 20 + files.length;
     },
 
     async analyzeDirectory() {
