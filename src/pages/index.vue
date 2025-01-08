@@ -161,11 +161,24 @@
       >
         <div class="flex justify-center items-center gap-4">
           <UTooltip
+            text="Upload Images"
+            :popper="{ arrow: true, placement: 'top' }"
+          >
+            <UButton
+              icon="fluent:image-add-32-light"
+              variant="solid"
+              size="xl"
+              color="indigo"
+              class="rounded-full p-4"
+              @click="uploadFiles"
+            />
+          </UTooltip>
+          <UTooltip
             text="Make All Square"
             :popper="{ arrow: true, placement: 'top' }"
           >
             <UButton
-              icon="fluent:color-background-24-filled"
+              icon="fluent:color-background-24-regular"
               variant="solid"
               size="xl"
               :color="fileStore.hasNonSquareFiles ? 'emerald' : 'white'"
@@ -307,5 +320,22 @@ const resolveImageEdit = async (dataUrl: string, file: ImageFile) => {
   const index = visibleFiles.value.findIndex((f) => f.path === file.path);
   visibleFiles.value[index].dimensions = file.dimensions;
   visibleFiles.value[index].resource = dataUrl;
+};
+
+const uploadFiles = async () => {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.multiple = true;
+  input.accept = "image/png, image/jpeg, image/jpg, image/webp, image/bmp";
+  input.webkitdirectory = false;
+
+  input.onchange = async (e) => {
+    const files = (e.target as HTMLInputElement).files;
+    if (files) {
+      await fileStore.uploadFiles(files);
+      if (mediaRef.value) mediaRef.value.scrollTop = 0;
+    }
+  };
+  input.click();
 };
 </script>

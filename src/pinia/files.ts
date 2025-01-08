@@ -143,10 +143,31 @@ export const useFiles = defineStore("files", {
       const json = await response.json();
       file.highConfidenceTags = Object.keys(json[file.path].high_tags);
       file.lowConfidenceTags = Object.keys(json[file.path].low_tags);
+      file.tags = [...file.highConfidenceTags];
 
       const fileIndex = this.files.findIndex((f) => f.path === file.path);
       if (fileIndex !== -1) {
         this.files[fileIndex] = file;
+      }
+    },
+
+    async uploadFiles(files: FileList) {
+      const formData = new FormData();
+      formData.append("path", this.directory);
+      for (let i = 0; i < files.length; i++) {
+        formData.append("files", files[i]);
+      }
+      const response = await $fetch<{ files: ImageFile[] }>("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      for (const file of response.files) {
+        this.files.unshift(file);
+      }
+
+      for (const file of response.files) {
+        await this.analyzeImage(file);
       }
     },
 
