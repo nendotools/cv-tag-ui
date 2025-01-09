@@ -63,6 +63,11 @@
                     class="rounded-full p-2"
                     variant="solid"
                     size="xs"
+                    :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
+                    :disabled="
+                      loaders.isLoading(Prefixes.ANALYZE + file.name) ||
+                      loaders.isQueued(Prefixes.ANALYZE + file.name)
+                    "
                     @click="fileStore.analyzeImage(file)"
                   />
                 </UTooltip>
@@ -119,13 +124,45 @@
             <p class="text-sm font-semibold">{{ file.name }}</p>
             <p class="text-xs text-gray-500">{{ file.path }}</p>
             <div>
-              <h4>
-                Applied Tags
-                <span class="text-primary text-xs text-gray-500">
-                  {{ file.highConfidenceTags.length }}
-                </span>
-              </h4>
-              <div class="ml-4 flex flex-row flex-wrap gap-2 m-4">
+              <UHorizontalNavigation
+                :links="[
+                  { 
+                    label: 'Applied Tags', 
+                    icon: 'fluent:tag-multiple-16-filled', 
+                    badge: {
+                      label: file.highConfidenceTags.length, 
+                      color: 'emerald',
+                      variant: 'soft'
+                    },
+                    active: !tagOptCache[file.name], 
+                    click: () => setTagOptCache(file.name, false) 
+                  },
+                  { 
+                    label: 'Excluded Tags', 
+                    icon: 'fluent:tag-multiple-16-regular', 
+                    badge: {
+                      label: file.lowConfidenceTags.length, 
+                      color: 'rose',
+                      variant: 'soft'
+                    },
+                    active: tagOptCache[file.name], 
+                    click: () => setTagOptCache(file.name, true) 
+                  },
+                  {
+                    label: 'Scan',
+                    avatar: {
+                      icon: loaders.hasActiveLoaders(Prefixes.ANALYZE + file.name) || loaders.hasQueuedLoaders(Prefixes.ANALYZE + file.name)
+                      ? 'fluent:tag-search-20-filled'
+                      : 'fluent:tag-search-20-regular',
+                      chipColor: loaders.hasQueuedLoaders(Prefixes.ANALYZE + file.name) ?
+                        'amber' : loaders.hasActiveLoaders(Prefixes.ANALYZE + file.name) ? 'rose' : undefined,
+                    },
+                    disabled: [...file.highConfidenceTags, ...file.lowConfidenceTags].length > 0,
+                    click: () => fileStore.analyzeImage(file),
+                  }
+                ]"
+              />
+              <div v-show="!tagOptCache[file.name]" class="ml-4 flex flex-row flex-wrap gap-2 m-4">
                 <ATag
                   v-for="tag in file.highConfidenceTags.length
                     ? file.highConfidenceTags
@@ -133,6 +170,7 @@
                   :key="tag"
                   :label="tag"
                   :exists="true"
+                  :simple="mode !== 'tag'"
                   @delete="fileStore.removeTag(file, tag)"
                 />
 
@@ -142,9 +180,8 @@
                   <p class="text-zinc-50/25">None</p>
                 </div>
               </div>
-              <h4 v-show="mode === 'tag'">Excluded Tags</h4>
               <div
-                v-show="mode === 'tag'"
+                v-show="tagOptCache[file.name]"
                 class="ml-4 flex flex-row flex-wrap gap-2 m-4"
               >
                 <ATag
@@ -152,6 +189,7 @@
                   :key="tag"
                   :label="tag"
                   :exists="false"
+                  :simple="mode !== 'tag'"
                   @add="fileStore.addTag(file, tag)"
                 />
 
@@ -164,7 +202,6 @@
         </div>
       </UCard>
       <div
-        v-show="observing"
         ref="page-binder"
         class="flex justify-center items-center"
       >
@@ -182,7 +219,9 @@
     class="fixed flex justify-center gap-8 bottom-6 left-0 right-0 pointer-events-none"
   >
     <div
-      class="p-2 bg-slate-950/90 rounded-full shadow-lg shadow-black/25 z-10 pointer-events-auto"
+      class="p-2 bg-slate-950/90 rounded-full shadow-lg shadow-black/25 z-10 pointer-events-auto border-none"
+      :class="[activityEffect]"
+      :style="animationEffect"
     >
       <div class="flex justify-center items-center gap-4">
         <UTooltip
@@ -195,6 +234,7 @@
             size="sm"
             color="indigo"
             class="rounded-full p-2"
+            :disabled="showActivity"
             @click="uploadFiles"
           />
         </UTooltip>
@@ -207,7 +247,7 @@
             variant="solid"
             size="sm"
             :color="fileStore.hasNonSquareFiles ? 'emerald' : 'white'"
-            :disabled="!fileStore.hasNonSquareFiles"
+            :disabled="!fileStore.hasNonSquareFiles || showActivity"
             class="rounded-full p-2"
             @click="makeAllSquare"
           />
@@ -221,6 +261,11 @@
             variant="solid"
             size="sm"
             class="rounded-full p-2"
+            :disabled="
+              loaders.hasActiveLoaders(Prefixes.ANALYZE) ||
+              loaders.hasQueuedLoaders(Prefixes.ANALYZE) ||
+              showActivity
+            "
             @click="analyzeDirectory"
           />
         </UTooltip>
@@ -246,6 +291,9 @@ import AHeader from "~/components/ui/AHeader.vue";
 import CropModal from "~/components/ui/CropModal.vue";
 import DirectoryModal from "~/components/ui/DirectoryModal.vue";
 
+import { useLoaders, Prefixes } from "~/pinia/loaders";
+const loaders = useLoaders();
+
 import { useTags } from "~/pinia/tags";
 const tagStore = useTags();
 
@@ -261,6 +309,11 @@ import TagSlideover from "~/components/ui/TagSlideover.vue";
 const { makeSquare } = useMakeSquare();
 
 const mode = ref<"view" | "tag">("view");
+const tagOptCache = ref<Record<string, boolean>>({});
+const setTagOptCache = (tag: string, value: boolean) => {
+  tagOptCache.value[tag] = value;
+};
+
 const cropTarget = ref<ImageFile | null>(null);
 const closeCropModal = () => {
   cropTarget.value = null;
@@ -280,7 +333,11 @@ const openDirectoryModal = () => {
 
 const slideover = useSlideover();
 const openTagPanel = () => {
-  slideover.open(TagSlideover);
+  slideover.open(TagSlideover, {
+    onFilter: () => {
+      resetPage();
+    },
+  });
 };
 
 onMounted(async () => {
@@ -292,9 +349,11 @@ onMounted(async () => {
   } else {
     openDirectoryModal();
   }
+    observer.observe(pageBinder.value as unknown as Element);
+
+  animateRotation();
 });
 
-const observing = ref(false);
 const mediaRef = useTemplateRef("media-list");
 const pageBinder = useTemplateRef("page-binder");
 const observer = new IntersectionObserver((entries) => {
@@ -311,11 +370,12 @@ const deleteFile = (file: ImageFile) => {
 };
 
 const analyzeDirectory = async () => {
+  setAnimation("scan-media-effect");
   await fileStore.analyzeDirectory();
+  stopAnimation();
 };
 
 const resetPage = async () => {
-  console.log(mediaRef.value);
   if (mediaRef.value) mediaRef.value.scrollTo({ top: 0, behavior: "smooth" });
   fileStore.visibilityLimit = 20;
   bindPage();
@@ -325,27 +385,19 @@ const bindPage = () => {
   if (files.value.length > 0) {
     fileStore.expandVisibility();
   }
-
-  if (visibleFiles.value.length >= files.value.length) {
-    observer.unobserve(pageBinder.value as unknown as Element);
-    observing.value = false;
-  }
-
-  if (!observing.value && pageBinder.value) {
-    observer.observe(pageBinder.value as unknown as Element);
-    observing.value = true;
-  }
 };
 
 const attemptMakeSquare = (file: ImageFile) => {
   makeSquare(file, resolveImageEdit);
 };
-const makeAllSquare = () => {
-  fileStore.files.forEach((file) => {
+const makeAllSquare = async () => {
+  setAnimation("make-square-effect");
+  fileStore.files.forEach(async (file) => {
     if (!isSquare(file)) {
-      makeSquare(file, resolveImageEdit);
+      await makeSquare(file, resolveImageEdit);
     }
   });
+  stopAnimation();
 };
 
 const resolveImageEdit = async (dataUrl: string, file: ImageFile) => {
@@ -364,13 +416,59 @@ const uploadFiles = async () => {
   input.accept = "image/png, image/jpeg, image/jpg, image/webp, image/bmp";
   input.webkitdirectory = false;
 
+  setAnimation("upload-media-effect");
   input.onchange = async (e) => {
     const files = (e.target as HTMLInputElement).files;
     if (files) {
       await fileStore.uploadFiles(files);
       if (mediaRef.value) mediaRef.value.scrollTop = 0;
     }
+    stopAnimation();
   };
+  input.oncancel = stopAnimation;
   input.click();
 };
+
+const rotation = ref(0);
+const animationEffect = computed(() => {
+  return {
+    "--rotation": `${rotation.value}deg`,
+  };
+});
+const showActivity = ref(false); 
+const activityEffect = ref<string>("");
+const setAnimation = (effect: string) => {
+  activityEffect.value = effect;
+  showActivity.value = true;
+  animateRotation();
+};
+const stopAnimation = () => {
+  activityEffect.value = "";
+  showActivity.value = false;
+};
+const animateRotation = () => {
+  rotation.value = (rotation.value + 5) % 360;
+  if (showActivity.value) requestAnimationFrame(animateRotation);
+};
 </script>
+
+<style scoped>
+.make-square-effect {
+  background: linear-gradient(rgb(2 6 23 / 0.9), rgb(2 6 23 / 0.9)) padding-box,
+              linear-gradient( var(--rotation), rgb(52 211 153), black) border-box;
+  border-radius: 50em;
+  border: 2px solid transparent;
+}
+.scan-media-effect {
+  background: linear-gradient(rgb(2 6 23 / 0.9), rgb(2 6 23 / 0.9)) padding-box,
+              linear-gradient( var(--rotation), rgb(var(--color-primary-400)), black) border-box;
+  border-radius: 50em;
+  border: 2px solid transparent;
+}
+.upload-media-effect {
+  background: linear-gradient(rgb(2 6 23 / 0.9), rgb(2 6 23 / 0.9)) padding-box,
+              linear-gradient( var(--rotation), rgb(129 140 248), black) border-box;
+  border-radius: 50em;
+  border: 2px solid transparent;
+}
+</style>

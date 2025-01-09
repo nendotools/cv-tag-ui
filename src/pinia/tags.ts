@@ -4,6 +4,7 @@ interface State {
   models: string[];
   activeModel: string;
   modelTags: Record<string, ImageTag[]>;
+  customTags: ImageTag[];
   categories: string[];
   categoryColors: string[];
 }
@@ -14,9 +15,10 @@ const CATEGORY_COLOR_CLASSES = [
   "indigo",
   "emerald",
   "amber",
-  "fuschia",
+  "fuchsia",
   "rose",
   "slate",
+  "lime",
 ];
 
 export const useTags = defineStore("tags", {
@@ -24,6 +26,7 @@ export const useTags = defineStore("tags", {
     models: [],
     activeModel: DEFAULT_MODEL,
     modelTags: {},
+    customTags: [],
     categories: CATEGORIES,
     categoryColors: CATEGORY_COLOR_CLASSES,
   }),
@@ -44,6 +47,8 @@ export const useTags = defineStore("tags", {
       });
       return categories;
     },
+    rawTags: (state) =>
+      state.modelTags[state.activeModel].map((tag) => tag.label),
     generalTags: (state) =>
       state.modelTags[state.activeModel]
         .filter((tag) => tag.category === 0)

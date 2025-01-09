@@ -7,6 +7,8 @@ export default defineEventHandler(async (event: H3Event) => {
   const pythonPath = `${pythonUtilPath}/venv/bin/python`;
   const pathArgs = ["--list-tags"];
   setHeader(event, "Content-Type", "application/json");
+  // set header to cache for 1 day
+  setHeader(event, "Cache-Control", "public, max-age=86400");
 
   // ensure python script exists
   const pythonExists = fs.existsSync(pythonPath);

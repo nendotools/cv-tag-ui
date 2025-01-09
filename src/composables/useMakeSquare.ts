@@ -1,5 +1,5 @@
 export const useMakeSquare = () => {
-  const makeSquare = (
+  const makeSquare = async (
     image: ImageFile,
     callback: (dataURI: string, image: ImageFile) => void,
   ) => {

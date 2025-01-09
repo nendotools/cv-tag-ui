@@ -80,7 +80,7 @@ const handleSave = () => {
 
 <style scoped>
 .measured-size {
-  height: calc(75dvh - 3.5rem);
-  max-width: calc(75dvh - 3.5rem);
+  height: calc(75dvh);
+  width: calc(75dvw);
 }
 </style>

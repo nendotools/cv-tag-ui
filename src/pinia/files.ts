@@ -1,10 +1,15 @@
 import { defineStore } from "pinia";
+import { useLoaders, Prefixes } from "./loaders";
 
 interface State {
   directory: string;
   files: ImageFile[];
   loadingMedia: boolean;
+  targetVisibility: number;
   visibilityLimit: number;
+  refreshing: boolean;
+  filters: Record<string, AndFilter | OrFilter>;
+  appliedFilters: Set<string>;
 }
 
 export const useFiles = defineStore("files", {
@@ -12,12 +17,50 @@ export const useFiles = defineStore("files", {
     directory: "",
     files: [],
     loadingMedia: false,
+    targetVisibility: 20,
     visibilityLimit: 20,
+    refreshing: false,
+    filters: {},
+    appliedFilters: new Set<string>(),
   }),
 
   getters: {
+    knownTags(state: State) {
+      return Array.from(
+        state.files.reduce((acc: Set<string>, file: ImageFile) => {
+          const tags = file.tags.map((t) => t.replaceAll("\\", "").replaceAll("_", " "));
+          return new Set([...acc, ...tags]);
+        }, new Set()),
+      );
+    },
     visibleFiles(state: State) {
-      return state.files.slice(0, state.visibilityLimit);
+      // if the filter is an "and" filter, all tags must be present
+      // if the filter is an "or" filter, at least one tag must be present
+      // multiple filters are combined with "and" (all ANDs must be true, each OR must have at least one true)
+      let allAnds = new Set<string>();
+      const orGroups: Set<string>[] = [];
+      for (const filter of state.appliedFilters) {
+        if (state.filters[filter].type === "and") {
+          allAnds = new Set([...allAnds, ...state.filters[filter].tags]);
+        } else {
+          orGroups.push(state.filters[filter].tags);
+        }
+      }
+      const filtered = state.files.filter((f) => {
+        for (const tag of allAnds) {
+          if (!f.tags.includes(tag)) {
+            return false;
+          }
+        }
+        for (const orGroup of orGroups) {
+          if (!orGroup.keys().some((tag) => f.tags.includes(tag))) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+      return filtered.slice(0, state.visibilityLimit);
     },
     hasNonSquareFiles(state: State) {
       return state.files.some(
@@ -27,15 +70,46 @@ export const useFiles = defineStore("files", {
   },
 
   actions: {
+    async gradualVisibility(triggered: boolean = false) {
+      // gradually increase the visibility limit to reduce the load on the client
+      if (this.visibilityLimit < this.targetVisibility) {
+        if (this.refreshing && !triggered) return;
+        this.visibilityLimit += 1;
+        setTimeout(() => this.gradualVisibility(true), 100);
+        this.refreshing = true;
+        return;
+      }
+      if (this.visibilityLimit > this.targetVisibility) {
+        this.visibilityLimit = this.targetVisibility
+      }
+      this.refreshing = false;
+    },
+    async applyFilter(name: string) {
+      this.appliedFilters.add(name);
+    },
+    async removeFilter(name: string) {
+      this.appliedFilters.delete(name);
+    },
+    async createFilter(name: string, type: "and" | "or", tags: Set<string>) {
+      this.filters[name] = { type, tags };
+    },
+    async addFilterTag(name: string, tag: string) {
+      this.filters[name].tags.add(tag);
+    },
+    async removeFilterTag(name: string, tag: string) {
+      this.filters[name].tags.delete(tag);
+    },
     async resetFiles() {
       this.files = [];
-      this.visibilityLimit = 20;
+      this.targetVisibility = 20;
+      this.visibilityLimit = 10;
+      this.gradualVisibility();
     },
     async expandVisibility() {
-      this.visibilityLimit += 20;
+      this.targetVisibility += 20;
+      this.gradualVisibility();
     },
     async fetchDirectories(path: string) {
-      // use POST method to send data to the server
       const directories = await $fetch<{
         path: string;
         isValid: boolean;
@@ -132,6 +206,14 @@ export const useFiles = defineStore("files", {
     },
 
     async analyzeImage(file: ImageFile) {
+      const loaders = useLoaders();
+      while (loaders.hasActiveLoaders(Prefixes.ANALYZE)) {
+        loaders.enqueue(`${Prefixes.ANALYZE}${file.name}`);
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+      loaders.dequeue(`${Prefixes.ANALYZE}${file.name}`);
+
+      loaders.start(`${Prefixes.ANALYZE}${file.name}`);
       console.log(`Analyzing image: ${file.path}`);
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -149,6 +231,7 @@ export const useFiles = defineStore("files", {
       if (fileIndex !== -1) {
         this.files[fileIndex] = file;
       }
+      loaders.end(`${Prefixes.ANALYZE}${file.name}`);
     },
 
     async uploadFiles(files: FileList) {

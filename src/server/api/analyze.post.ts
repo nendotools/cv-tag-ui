@@ -58,6 +58,7 @@ export default defineEventHandler(async (event: H3Event) => {
       console.log(String(data));
     });
     py.stdout.on("end", () => {
+      console.log("complete");
       resolve(true);
     });
   });

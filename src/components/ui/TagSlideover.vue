@@ -7,6 +7,19 @@
       />
 
       <!-- Create Filter, Store Tags, Browse Tags -->
+      <div v-if="mode === 'create'" class="p-4 row-span-1 col-span-1">
+        <h3>New Filter</h3>
+        <div class="flex flex-row gap-2">
+        <UInput placeholder="Filter Name" v-model="newFilter" @keypress.enter="createFilter" />
+        <UButton @click="createFilter">Add Filter</UButton>
+        </div>
+
+        <UInputMenu v-if="activeFilter.length" placeholder="Search tags" v-model="search" :search="suggestedTags" @keypress.enter="addFilterTag" />
+
+        <div v-for="(filter, name) in fileStore.filters" :key="name">
+          {{ name }}
+        </div>
+      </div>
       <div v-if="mode === 'browse'" class="p-4 row-span-1 col-span-1">
         <UInput placeholder="Search tags" v-model="search" />
         <div class="flex flex-row gap-4">
@@ -22,6 +35,18 @@
             }"
           >
             {{ category }}
+          </UButton>
+          <UButton
+            v-if="filteredCustomTags.size"
+            :color="activeCategory === 6 ? 'primary' : 'gray'"
+            variant="link"
+            @click="activeCategory = 6"
+            :ui="{
+              rounded: 'rounded-full',
+              padding: { base: 'px-2 py-1' },
+            }"
+          >
+            Custom
           </UButton>
           <UButton
             v-if="otherTags.length"
@@ -56,10 +81,12 @@
 </template>
 
 <script setup lang="ts">
+import { useFiles } from "~/pinia/files";
 import { useTags } from "~/pinia/tags";
+const fileStore = useFiles();
 const tagStore = useTags();
 const {
-  tags,
+  rawTags,
   generalTags,
   artistTags,
   copyrightTags,
@@ -67,12 +94,44 @@ const {
   styleTags,
   otherTags,
   availableCategories,
+  customTags,
   categoryColors,
 } = storeToRefs(tagStore);
 
-const search = ref<string>("");
-const mode = ref<"create" | "store" | "browse">("browse");
+const emits = defineEmits(["filter"]);
 
+const newFilter = ref<string>("");
+const activeFilter = ref<string>("");
+const createFilter = (_: KeyboardEvent) => {
+  if (newFilter.value.length < 1) return;
+  fileStore.createFilter(newFilter.value, 'and', new Set());
+  activeFilter.value = newFilter.value;
+  newFilter.value = "";
+};
+
+const search = ref<string>("");
+const suggestedTags = (q: string) => {
+  if (q.length < 1) return [];
+  return rawTags.value
+    .filter((tag) => tag.includes(q))
+    // sort by exact match, then by length, then by alphabetical order
+    .sort((a, b) => {
+      if (a === q) return -1;
+      if (b === q) return 1;
+      if (a.length === b.length) return a.localeCompare(b);
+      return a.length - b.length;
+    })
+    .slice(0, 10);
+};
+const addFilterTag = (_: KeyboardEvent) => {
+  if (search.value.length < 1) return;
+  if(!rawTags.value.includes(search.value)) return;
+  emits("filter");
+  fileStore.addFilterTag('or', search.value);
+  search.value = "";
+};
+
+const mode = ref<"create" | "store" | "browse">("browse");
 const links = computed(() => [
   {
     label: "Create Filter",
@@ -91,6 +150,12 @@ const links = computed(() => [
   },
 ]);
 
+const filteredCustomTags = computed(() => {
+  const customKnownTags = fileStore.knownTags.filter(
+    (tag) => !rawTags.value.includes(tag),
+  );
+  return new Set([...customTags.value.map((tag)=>tag.label), ...customKnownTags]);
+});
 const activeCategory = ref<number>(0);
 const computedTags = computed(() => {
   switch (activeCategory.value) {
@@ -106,6 +171,8 @@ const computedTags = computed(() => {
       return styleTags.value;
     case 5:
       return otherTags.value;
+    case 6:
+      return Array.from(filteredCustomTags.value);
     default:
       return [];
   }
