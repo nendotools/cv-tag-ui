@@ -1,5 +1,5 @@
 <template>
-  <UModal>
+  <UModal :ui="{container: 'items-center' }">
     <UCard
       :ui="{
         ring: '',

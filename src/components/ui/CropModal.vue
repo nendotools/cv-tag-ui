@@ -4,6 +4,7 @@
     fullscreen
     :ui="{
       fullscreen: 'w-3/4 h-3/4',
+      container: 'items-center',
     }"
   >
     <UCard
@@ -80,7 +81,7 @@ const handleSave = () => {
 
 <style scoped>
 .measured-size {
-  height: calc(75dvh);
+  height: calc(65dvh);
   width: calc(75dvw);
 }
 </style>
