@@ -21,6 +21,8 @@ export default defineEventHandler(async (event) => {
   }
 
   setHeader(event, "Status", isValid ? "200" : "400");
+  setHeader(event, "Content-Type", "application/json");
+  setHeader(event, "Cache-Control", "public, max-age=300");
   return {
     path,
     isValid,

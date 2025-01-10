@@ -48,38 +48,38 @@ export const useTags = defineStore("tags", {
       return categories;
     },
     rawTags: (state) =>
-      state.modelTags[state.activeModel].map((tag) => tag.label),
+      state.modelTags[state.activeModel].map((tag) => tag.name),
     generalTags: (state) =>
       state.modelTags[state.activeModel]
         .filter((tag) => tag.category === 0)
-        .map((tag) => tag.label),
+        .map((tag) => tag.name),
     artistTags: (state) =>
       state.modelTags[state.activeModel]
         .filter((tag) => tag.category === 1)
-        .map((tag) => tag.label),
+        .map((tag) => tag.name),
     copyrightTags: (state) =>
       state.modelTags[state.activeModel]
         .filter((tag) => tag.category === 2)
-        .map((tag) => tag.label),
+        .map((tag) => tag.name),
     characterTags: (state) =>
       state.modelTags[state.activeModel]
         .filter((tag) => tag.category === 3)
-        .map((tag) => tag.label),
+        .map((tag) => tag.name),
     styleTags: (state) =>
       state.modelTags[state.activeModel]
         .filter((tag) => tag.category === 4)
-        .map((tag) => tag.label),
+        .map((tag) => tag.name),
     otherTags: (state) =>
       state.modelTags[state.activeModel]
         .filter((tag) => tag.category > 4)
-        .map((tag) => tag.label),
+        .map((tag) => tag.name),
     tagColors: (state) => {
       if (!state.modelTags[state.activeModel]) {
         return {};
       }
       return state.modelTags[state.activeModel].reduce(
         (acc, tag) => {
-          return { ...acc, [tag.label]: state.categoryColors[tag.category] };
+          return { ...acc, [tag.name]: state.categoryColors[tag.category] };
         },
         {} as Record<string, string>,
       );
@@ -88,20 +88,18 @@ export const useTags = defineStore("tags", {
 
   actions: {
     async fetchModels() {
-      const models = await fetch("/api/models");
-      this.models = await models.json();
+      const models = await $fetch<string[]>("/inferrence/models");
+      this.models = models;
       this.fetchTags();
     },
     async fetchTags() {
-      const { tags } = await $fetch<{
-        tags: { label: string; category: number }[];
-        error: string;
-      }>(`/api/tags`, {
+      const model = this.models.includes(this.activeModel) ? this.activeModel : this.models[0];
+      const tags = await $fetch<{ name: string; category: number }[]>(`/inferrence/tags`, {
         headers: {
           "Content-Type": "application/json",
         },
         query: {
-          model: this.activeModel,
+          model,
         },
       });
       if (tags) {

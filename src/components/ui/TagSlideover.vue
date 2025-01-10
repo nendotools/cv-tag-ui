@@ -104,7 +104,7 @@ const newFilter = ref<string>("");
 const activeFilter = ref<string>("");
 const createFilter = (_: KeyboardEvent) => {
   if (newFilter.value.length < 1) return;
-  fileStore.createFilter(newFilter.value, 'and', new Set());
+  fileStore.createFilter(newFilter.value, 'and');
   activeFilter.value = newFilter.value;
   newFilter.value = "";
 };
@@ -127,7 +127,8 @@ const addFilterTag = (_: KeyboardEvent) => {
   if (search.value.length < 1) return;
   if(!rawTags.value.includes(search.value)) return;
   emits("filter");
-  fileStore.addFilterTag('or', search.value);
+
+  fileStore.addFilterTag(activeFilter.value, search.value);
   search.value = "";
 };
 
@@ -154,7 +155,7 @@ const filteredCustomTags = computed(() => {
   const customKnownTags = fileStore.knownTags.filter(
     (tag) => !rawTags.value.includes(tag),
   );
-  return new Set([...customTags.value.map((tag)=>tag.label), ...customKnownTags]);
+  return new Set([...customTags.value.map((tag)=>tag.name), ...customKnownTags]);
 });
 const activeCategory = ref<number>(0);
 const computedTags = computed(() => {

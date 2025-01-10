@@ -33,10 +33,10 @@
     </template>
   </AHeader>
 
-  <div class="grid grid-cols-1 gap-4 mt-16">
+  <div class="grid grid-cols-1 gap-4 pt-16">
     <div
       ref="media-list"
-      class="h-dvh flex flex-col justify-start items-stretch p-8 gap-4 overflow-y-auto pb-16"
+      class="h-dvh flex flex-col justify-start items-stretch p-8 gap-4 overflow-y-auto pb-48"
     >
       <UCard v-for="file in visibleFiles" :key="file.name">
         <div class="grid items-center grid-cols-4">
@@ -201,20 +201,24 @@
           </div>
         </div>
       </UCard>
-      <div
-        ref="page-binder"
-        class="flex justify-center items-center"
-      >
-        <UIcon
-          ref="page-binder"
-          name="fluent:chevron-down-12-filled"
-          class="w-5 h-5 text-primary-500"
-        />
-      </div>
     </div>
   </div>
 
   <!-- Bottom Rounded Toolbar -->
+  <div
+    class="fixed flex justify-center gap-8 bottom-20 left-0 right-0 pointer-events-none"
+  >
+    <!-- page navigation -->
+    <div
+      class="p-2 bg-slate-950/90 flex items-center justify-center gap-2 rounded-full shadow-lg shadow-black/25 z-10 pointer-events-auto border-none"
+    >
+    <UButton icon="fluent:arrow-previous-16-filled" variant="ghost" size="sm" color="white" class="rounded-full p-2" @click="fileStore.setPage(1)"/>
+    <UButton icon="fluent:chevron-left-16-filled" variant="ghost" size="sm" color="white" class="rounded-full p-2" @click="fileStore.setPage(fileStore.page-1)"/>
+    {{ fileStore.page }}/{{ fileStore.pages}}
+    <UButton icon="fluent:chevron-right-16-filled" variant="ghost" size="sm" color="white" class="rounded-full p-2" @click="fileStore.setPage(fileStore.page+1)"/>
+    <UButton icon="fluent:arrow-next-16-filled" variant="ghost" size="sm" color="white" class="rounded-full p-2" @click="fileStore.setPage(fileStore.pages)"/>
+  </div>
+  </div>
   <div
     class="fixed flex justify-center gap-8 bottom-6 left-0 right-0 pointer-events-none"
   >
@@ -302,7 +306,7 @@ const { recall } = useRecall();
 
 import { useFiles } from "@/pinia/files";
 const fileStore = useFiles();
-const { files, visibleFiles } = storeToRefs(fileStore);
+const { visibleFiles } = storeToRefs(fileStore);
 
 import { useMakeSquare } from "#build/imports";
 import TagSlideover from "~/components/ui/TagSlideover.vue";
@@ -349,17 +353,7 @@ onMounted(async () => {
   } else {
     openDirectoryModal();
   }
-    observer.observe(pageBinder.value as unknown as Element);
-
   animateRotation();
-});
-
-const mediaRef = useTemplateRef("media-list");
-const pageBinder = useTemplateRef("page-binder");
-const observer = new IntersectionObserver((entries) => {
-  if (entries[0].isIntersecting) {
-    bindPage();
-  }
 });
 
 const isSquare = (file: ImageFile) =>
@@ -376,15 +370,7 @@ const analyzeDirectory = async () => {
 };
 
 const resetPage = async () => {
-  if (mediaRef.value) mediaRef.value.scrollTo({ top: 0, behavior: "smooth" });
-  fileStore.visibilityLimit = 20;
-  bindPage();
-};
-
-const bindPage = () => {
-  if (files.value.length > 0) {
-    fileStore.expandVisibility();
-  }
+  fileStore.setPage();
 };
 
 const attemptMakeSquare = (file: ImageFile) => {
@@ -409,6 +395,7 @@ const resolveImageEdit = async (dataUrl: string, file: ImageFile) => {
   visibleFiles.value[index].resource = dataUrl;
 };
 
+const mediaRef = useTemplateRef("media-list");
 const uploadFiles = async () => {
   const input = document.createElement("input");
   input.type = "file";

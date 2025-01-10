@@ -1,6 +1,9 @@
 import { defineEventHandler, H3Event, readBody } from "h3";
+import { createHash } from "crypto";
 import imageSize from "image-size";
 import * as fs from "fs";
+
+const Extensions = ["jpg", "jpeg", "png", "bmp", "webp"] as const;
 
 export default defineEventHandler(async (event: H3Event) => {
   const { path } = await readBody(event);
@@ -17,63 +20,16 @@ export default defineEventHandler(async (event: H3Event) => {
   // format the files to be returned
   const files: Record<string, ImageFile> = {};
   const dFiles = fs.readdirSync(path, { withFileTypes: true });
-  console.log("found files:", dFiles.length);
   for (const file of dFiles) {
-    // skip directories and hidden files
-    if (file.isDirectory() || file.name.startsWith(".")) {
-      console.log(`Skipping ${file.name}`);
+    // skip files with wronge extensions
+    if (!Extensions.includes((file.name.split(".").pop() || "") as typeof Extensions[number])) {
       continue;
     }
 
-    // skip non-image and non-txt files
-    if (!file.name.toLowerCase().match(/\.(jpg|jpeg|png|bmp|txt|json)$/)) {
-      console.log(`Skipping ${file.name}`);
-      continue;
+    const { image } = prepareFile(path, file.name);
+    if (image) {
+      files[image.hash] = image;
     }
-
-    const type = file.name.split(".").pop();
-    const baseName = file.name.replace(/\.(jpg|jpeg|png|bmp|txt|json)$/i, "");
-    const image: ImageFile = files[baseName] ?? {
-      path: `${path}/${file.name}`,
-      name: ["txt", "json"].includes(type || "") ? "" : file.name,
-      dimensions: { width: 0, height: 0 },
-      tags: [],
-      highConfidenceTags: [],
-      lowConfidenceTags: [],
-    };
-
-    // parse the txt file as an array from CSV
-    if (file.name.endsWith(".txt")) {
-      const tags = fs.readFileSync(`${path}/${file.name}`, "utf-8").split(",");
-      for (const tag of tags) {
-        if (tag === "") {
-          tags.splice(tags.indexOf(tag), 1);
-        } else {
-          tags[tags.indexOf(tag)] = tag.trim();
-        }
-      }
-      image.tags = tags;
-    } else if (file.name.endsWith(".json")) {
-      const json = JSON.parse(fs.readFileSync(`${path}/${file.name}`, "utf-8"));
-      image.highConfidenceTags = Object.keys(json.high_tags);
-      image.lowConfidenceTags = Object.keys(json.low_tags);
-    } else {
-      try {
-        const dims = imageSize(`${path}/${file.name}`);
-        image.dimensions = {
-          width: dims.width || 0,
-          height: dims.height || 0,
-        };
-      } catch (e) {
-        image.dimensions = {
-          width: 0,
-          height: 0,
-        };
-      }
-      image.resource = `/resource${path}/${file.name}`;
-    }
-
-    files[baseName] = image;
   }
 
   return {
@@ -82,3 +38,47 @@ export default defineEventHandler(async (event: H3Event) => {
     files: Object.values(files),
   };
 });
+
+const prepareFile = (dir: string, fileName: string): { image: ImageFile, error?: null } | { image?: null, error: string } => {
+  // load the file
+  if (!fs.existsSync(`${dir}/${fileName}`)) {
+    return { error: "File not found" }
+  }
+
+  const type = fileName.split(".").pop();
+  if (!type || !["jpg", "jpeg", "png", "bmp"].includes(type)) {
+    return { error: "Invalid file type" }
+  }
+  // get the dimensions
+  const dims = imageSize(`${dir}/${fileName}`);
+
+  // create hash ID from file data
+  const file = fs.readFileSync(`${dir}/${fileName}`);
+  const hash = createHash("sha256").update(file).digest("hex");
+  const name = fileName.replace(/\.(jpg|jpeg|png|bmp)$/i, "");
+
+  const image: ImageFile = {
+    hash,
+    name,
+    path: `${dir}/${fileName}`,
+    resource: `/resource${dir}/${fileName}`,
+    dimensions: { width: dims.width || 0, height: dims.height || 0 },
+    mimeType: dims.type ?? MIME_TYPES[type.toUpperCase() as keyof typeof MIME_TYPES],
+    highConfidenceTags: [],
+    lowConfidenceTags: [],
+    tags: [],
+  };
+
+  if (fs.existsSync(`${dir}/${name}.txt`)) {
+    const tags = fs.readFileSync(`${dir}/${name}.txt`, "utf-8").split(",").map((tag) => tag.trim()).filter((tag) => tag !== "");
+    image.tags = tags;
+  }
+
+  if (fs.existsSync(`${dir}/${name}.json`)) {
+    const json = JSON.parse(fs.readFileSync(`${dir}/${name}.json`, "utf-8"));
+    image.highConfidenceTags = Object.keys(json.high_tags);
+    image.lowConfidenceTags = Object.keys(json.low_tags);
+  }
+
+  return { image }
+}

@@ -37,7 +37,9 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     });
     py.stderr.on("data", (data: Buffer) => {
-      console.log(String(data));
+      if (process.env.LOG_LEVEL === "debug") {
+        console.error(String(data));
+      }
     });
     py.stdout.on("end", () => {
       resolve(true);

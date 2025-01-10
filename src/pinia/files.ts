@@ -3,10 +3,12 @@ import { useLoaders, Prefixes } from "./loaders";
 
 interface State {
   directory: string;
+  kohyaDirs: string[];
   files: ImageFile[];
+  kohyaFiles: Record<string, ImageFile[]>;
   loadingMedia: boolean;
-  targetVisibility: number;
-  visibilityLimit: number;
+  page: number;
+  pageSize: number;
   refreshing: boolean;
   filters: Record<string, AndFilter | OrFilter>;
   appliedFilters: Set<string>;
@@ -16,9 +18,11 @@ export const useFiles = defineStore("files", {
   state: (): State => ({
     directory: "",
     files: [],
+    kohyaDirs: [],
+    kohyaFiles: {},
     loadingMedia: false,
-    targetVisibility: 20,
-    visibilityLimit: 20,
+    page: 1,
+    pageSize: 6,
     refreshing: false,
     filters: {},
     appliedFilters: new Set<string>(),
@@ -60,7 +64,34 @@ export const useFiles = defineStore("files", {
 
         return true;
       });
-      return filtered.slice(0, state.visibilityLimit);
+      console.log("filtered", filtered);
+      return filtered.slice((state.page - 1) * state.pageSize, state.page * state.pageSize);
+    },
+    pages(state: State) {
+      let allAnds = new Set<string>();
+      const orGroups: Set<string>[] = [];
+      for (const filter of state.appliedFilters) {
+        if (state.filters[filter].type === "and") {
+          allAnds = new Set([...allAnds, ...state.filters[filter].tags]);
+        } else {
+          orGroups.push(state.filters[filter].tags);
+        }
+      }
+      const filtered = state.files.filter((f) => {
+        for (const tag of allAnds) {
+          if (!f.tags.includes(tag)) {
+            return false;
+          }
+        }
+        for (const orGroup of orGroups) {
+          if (!orGroup.keys().some((tag) => f.tags.includes(tag))) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+      return Math.ceil(filtered.length / state.pageSize);
     },
     hasNonSquareFiles(state: State) {
       return state.files.some(
@@ -70,28 +101,14 @@ export const useFiles = defineStore("files", {
   },
 
   actions: {
-    async gradualVisibility(triggered: boolean = false) {
-      // gradually increase the visibility limit to reduce the load on the client
-      if (this.visibilityLimit < this.targetVisibility) {
-        if (this.refreshing && !triggered) return;
-        this.visibilityLimit += 1;
-        setTimeout(() => this.gradualVisibility(true), 100);
-        this.refreshing = true;
-        return;
-      }
-      if (this.visibilityLimit > this.targetVisibility) {
-        this.visibilityLimit = this.targetVisibility
-      }
-      this.refreshing = false;
-    },
     async applyFilter(name: string) {
       this.appliedFilters.add(name);
     },
     async removeFilter(name: string) {
       this.appliedFilters.delete(name);
     },
-    async createFilter(name: string, type: "and" | "or", tags: Set<string>) {
-      this.filters[name] = { type, tags };
+    async createFilter(name: string, type: "and" | "or") {
+      this.filters[name] = { type, tags: new Set() };
     },
     async addFilterTag(name: string, tag: string) {
       this.filters[name].tags.add(tag);
@@ -101,13 +118,11 @@ export const useFiles = defineStore("files", {
     },
     async resetFiles() {
       this.files = [];
-      this.targetVisibility = 20;
-      this.visibilityLimit = 10;
-      this.gradualVisibility();
+      this.setPage();
     },
-    async expandVisibility() {
-      this.targetVisibility += 20;
-      this.gradualVisibility();
+    async setPage(page: number = 1) {
+      this.page = Math.max(1, Math.min(page, Math.ceil(this.files.length / this.pageSize)));
+      console.log(this.visibleFiles);
     },
     async fetchDirectories(path: string) {
       const directories = await $fetch<{
@@ -215,16 +230,16 @@ export const useFiles = defineStore("files", {
 
       loaders.start(`${Prefixes.ANALYZE}${file.name}`);
       console.log(`Analyzing image: ${file.path}`);
-      const response = await fetch("/api/analyze", {
+      const json = await $fetch<{ high_tags: string[], low_tags: string[] }>("/inferrence/process_file", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ filePath: file.path }),
+        body: JSON.stringify({ file: file.path }),
       });
-      const json = await response.json();
-      file.highConfidenceTags = Object.keys(json[file.path].high_tags);
-      file.lowConfidenceTags = Object.keys(json[file.path].low_tags);
+
+      file.highConfidenceTags = Object.keys(json.high_tags);
+      file.lowConfidenceTags = Object.keys(json.low_tags);
       file.tags = [...file.highConfidenceTags];
 
       const fileIndex = this.files.findIndex((f) => f.path === file.path);
@@ -232,6 +247,18 @@ export const useFiles = defineStore("files", {
         this.files[fileIndex] = file;
       }
       loaders.end(`${Prefixes.ANALYZE}${file.name}`);
+    },
+
+    async analyzeDirectory() {
+      const loaders = useLoaders();
+      console.log("Analyzing all images");
+      // visually queue all files for analysis
+      for (const file of this.files) {
+        loaders.enqueue(`${Prefixes.ANALYZE}${file.name}`);
+      }
+      for (const file of this.files) {
+        await this.analyzeImage(file);
+      }
     },
 
     async uploadFiles(files: FileList) {
@@ -252,26 +279,7 @@ export const useFiles = defineStore("files", {
       for (const file of response.files) {
         await this.analyzeImage(file);
       }
-      this.visibilityLimit = 20 + files.length;
-    },
-
-    async analyzeDirectory() {
-      console.log("Analyzing all images");
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ folderPath: this.directory }),
-      });
-      const json: Record<string, any> = await response.json();
-      for (const item in json) {
-        const fileId = this.files.findIndex((f) => f.path === item);
-        this.files[fileId].highConfidenceTags = Object.keys(
-          json[item].high_tags,
-        );
-        this.files[fileId].lowConfidenceTags = Object.keys(json[item].low_tags);
-      }
+      this.pageSize = 20 + files.length;
     },
   },
 });

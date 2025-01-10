@@ -2,7 +2,7 @@ export { ImageTag, AndFilter, OrFilter };
 
 declare global {
   interface ImageTag {
-    label: string;
+    name: string;
     category: number;
   }
 
