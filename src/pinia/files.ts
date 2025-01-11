@@ -141,21 +141,8 @@ export const useFiles = defineStore("files", {
     },
     async setDirectory(path: string) {
       this.directory = path;
-      //await this.fetchFiles();
       await this.workerFetchFiles();
-    },
-    async fetchFiles() {
-      this.loadingMedia = true;
-      const files = await fetch("/api/files", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ path: this.directory }),
-      }).then((res) => res.json());
-      this.files = files.files;
-
-      this.loadingMedia = false;
+      this.files = [];
     },
 
     async workerFetchFiles() {

@@ -23,23 +23,50 @@
           class="flex-1"
           placeholder="Directory path"
           :options="options"
+          :popper="{
+              placement: 'top-end',
+          }"
           v-model="current"
           v-model:query="current"
           @input="onInput"
         />
-        <UButton
-          color="gray"
-          variant="solid"
-          :disabled="loading"
-          @click="() => console.log('clicked')"
-        >
-          Browse
+        <UButton v-if="kohyaParent" color="emerald" :loading="loading" :disabled="loading" @click="onSaveParent">
+          Use Parent
         </UButton>
+      </div>
+      <div v-if="directoryStore.relatedDirectories" class="flex flex-col gap-2 mt-4">
+        <div v-for="opt, index in directoryStore.subDirectories" :key="index" class="w-full grid grid-cols-5 gap-2 items-center">
+          <UButton
+            class="col-span-2" 
+            :color="isActive(opt) ? 'emerald' : 'gray'"
+            :icon="isActive(opt) ? 'fluent:folder-20-filled' : 'fluent:folder-20-regular'"
+            @click="directoryStore.activeDirectory = opt.name" >
+            {{ opt.name }}
+          </UButton>
+          <UBadge
+            :variant="isActive(opt) ? 'subtle' : 'solid'" 
+            :color="isActive(opt) ? 'emerald' : 'gray'"
+            icon="fluent:image-20-regular">
+            {{ opt.images }}
+          </UBadge>
+          <UBadge
+            :variant="isActive(opt) ? 'subtle' : 'solid'" 
+            :color="isActive(opt) ? 'emerald' : 'gray'"
+            icon="fluent:tag-20-regular">
+            {{ opt.tags }}
+          </UBadge>
+          <UBadge
+            :variant="isActive(opt) ? 'subtle' : 'solid'" 
+            :color="isActive(opt) ? 'emerald' : 'gray'"
+            icon="fluent:book-database-20-regular">
+            {{ opt.scans }}
+          </UBadge>
+        </div>
       </div>
 
       <template #footer>
         <div class="flex justify-end gap-4">
-          <UButton :loading="loading" :disabled="loading" @click="onSave">
+          <UButton @click="onSave">
             Save
           </UButton>
         </div>
@@ -55,31 +82,32 @@ const { store } = useRecall();
 import { useFiles } from "@/pinia/files";
 const files = useFiles();
 
-const props = defineProps<{
-  directory: string;
-}>();
+import { KOHYA_FOLDER_PATTERN, useDirectory } from "~/pinia/directory";
+const directoryStore = useDirectory();
+
 const emit = defineEmits(["save"]);
 onMounted(() => {
   loading.value = false;
-  current.value = props.directory;
+  current.value = directoryStore.baseDirectory;
   updateDirectoryList();
 });
 
-const open = ref(false);
 const current = ref<string>("");
 const options = ref<string[]>([]);
 const loading = ref(false);
+const parentDir = computed(() => current.value.split("/").slice(0, -1).join("/"));
+const kohyaParent = computed(() => {
+  if (!options.value.length) return false;
+  return options.value.some((opt) => KOHYA_FOLDER_PATTERN.test(opt.split("/").pop() || ""));
+});
 
 const updateDirectoryList = async () => {
-  // determine the current directory by splitting the current value to the last slash
-  const dir = current.value.split("/").slice(0, -1).join("/");
-
   // fetch directories from the server based on the current value
   // and update the options
-  files.fetchDirectories(dir).then((res: string[]) => {
+  directoryStore.fetchDirectories(parentDir.value).then((res: string[]) => {
     const opts: string[] = [];
     res.forEach((inner) => {
-      opts.push(`${dir}/${inner}`);
+      opts.push(`${parentDir.value}/${inner}`);
     });
     options.value = opts;
   });
@@ -96,11 +124,20 @@ const onInput = (e: Event) => {
 };
 
 const onSave = async () => {
+  files.setDirectory(directoryStore.workingDirectory);
+  emit("save");
+};
+
+const onSaveParent = async () => {
   loading.value = true;
-  await files.setDirectory(current.value);
+  current.value = parentDir.value;
+  await directoryStore.setDirectory(current.value, true);
   store("directory", current.value);
 
-  emit("save");
-  open.value = false;
+  //emit("save");
+};
+
+const isActive = (dir: ImageDirectory) => {
+  return directoryStore.activeDirectory === dir.name;
 };
 </script>

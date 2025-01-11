@@ -345,6 +345,9 @@ const tagStore = useTags();
 import { useRecall } from "~/pinia/recall";
 const { recall } = useRecall();
 
+import { useDirectory } from "~/pinia/directory";
+const directoryStore = useDirectory();
+
 import { useFiles } from "@/pinia/files";
 const fileStore = useFiles();
 const { visibleFiles } = storeToRefs(fileStore);
@@ -370,7 +373,6 @@ const closeCropModal = () => {
 const modal = useModal();
 const openDirectoryModal = () => {
   modal.open(DirectoryModal, {
-    directory: fileStore.directory,
     onSave: () => {
       modal.close();
       setPage();
@@ -392,8 +394,7 @@ onMounted(async () => {
   const directory = recall("directory");
   if (directory) {
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    await fileStore.setDirectory(directory);
-    setPage();
+    directoryStore.setDirectory(directory);
   } else {
     openDirectoryModal();
   }
