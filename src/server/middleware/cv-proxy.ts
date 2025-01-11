@@ -1,8 +1,9 @@
 import { defineEventHandler, H3Event } from "h3";
 
-export default defineEventHandler((event: H3Event) => {
+// need to benchmark
+export default defineEventHandler(async (event: H3Event) => {
   if (event.node.req.url?.startsWith("/inferrence/")) {
-    // handle the request by validating the target file exists, is a file, and is an image, then return the file
+    setHeader(event, "Cache-Control", "public, max-age=300");
     const path = decodeURIComponent(
       event.node.req.url.replace("/inferrence", ""),
     );

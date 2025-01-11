@@ -2,13 +2,13 @@
 export default defineNuxtConfig({
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
-  srcDir: "src",
   ssr: false,
+  srcDir: "src",
   runtimeConfig: {
     pythonUtilPath: process.env.PYTHON_UTIL_PATH,
   },
 
-  modules: ["@pinia/nuxt", "@nuxt/ui"],
+  modules: ["@pinia/nuxt", "@nuxt/ui", "@nuxt/icon"],
   ui: {
     global: true,
   },

@@ -120,7 +120,7 @@
           </div>
 
           <!-- File Details -->
-          <div class="flex flex-col ml-4 col-start-2 col-span-3 gap-2">
+          <div class="flex flex-col self-start ml-4 col-start-2 col-span-3 gap-2">
             <p class="text-sm font-semibold">{{ file.name }}</p>
             <p class="text-xs text-gray-500">{{ file.path }}</p>
             <div>
@@ -205,22 +205,59 @@
   </div>
 
   <!-- Bottom Rounded Toolbar -->
+  <div class="w-full fixed flex flex-col-reverse justify-center items-center bottom-6 gap-2">
   <div
-    class="fixed flex justify-center gap-8 bottom-20 left-0 right-0 pointer-events-none"
+    class="flex justify-center gap-8 pointer-events-none"
   >
-    <!-- page navigation -->
     <div
-      class="p-2 bg-slate-950/90 flex items-center justify-center gap-2 rounded-full shadow-lg shadow-black/25 z-10 pointer-events-auto border-none"
+      class="p-2 bg-slate-800/95 flex items-center justify-center gap-2 rounded-full shadow-lg shadow-black/25 z-10 pointer-events-auto border-none"
     >
-    <UButton icon="fluent:arrow-previous-16-filled" variant="ghost" size="sm" color="white" class="rounded-full p-2" @click="fileStore.setPage(1)"/>
-    <UButton icon="fluent:chevron-left-16-filled" variant="ghost" size="sm" color="white" class="rounded-full p-2" @click="fileStore.setPage(fileStore.page-1)"/>
-    {{ fileStore.page }}/{{ fileStore.pages}}
-    <UButton icon="fluent:chevron-right-16-filled" variant="ghost" size="sm" color="white" class="rounded-full p-2" @click="fileStore.setPage(fileStore.page+1)"/>
-    <UButton icon="fluent:arrow-next-16-filled" variant="ghost" size="sm" color="white" class="rounded-full p-2" @click="fileStore.setPage(fileStore.pages)"/>
+    <UButton
+      icon="fluent:arrow-previous-16-filled"
+      variant="ghost"
+      size="sm"
+      color="white"
+      class="rounded-full p-2"
+      :style="{ opacity: fileStore.page === 1 ? 0.2 : 1 }"
+      :disabled="fileStore.page === 1"
+      @click="setPage(1)"
+      />
+    <UButton
+      icon="fluent:chevron-left-16-filled"
+      variant="ghost"
+      size="sm"
+      color="white"
+      class="rounded-full p-2"
+      :style="{ opacity: fileStore.page === 1 ? 0.2 : 1 }"
+      :disabled="fileStore.page === 1"
+      @click="setPage(fileStore.page-1)"
+      />
+    <span class="text-md text-center">{{ fileStore.page }}/{{ fileStore.pages}}</span>
+    <UButton 
+      icon="fluent:chevron-right-16-filled" 
+      variant="ghost" 
+      size="sm" 
+      color="white" 
+      class="rounded-full p-2" 
+      :style="{ opacity: fileStore.page === fileStore.pages ? 0.2 : 1 }"
+      :disabled="fileStore.page === fileStore.pages"
+      @click="setPage(fileStore.page+1)"
+      />
+    <UButton 
+      icon="fluent:arrow-next-16-filled" 
+      variant="ghost" 
+      size="sm" 
+      color="white" 
+      class="rounded-full p-2" 
+      :style="{ opacity: fileStore.page === fileStore.pages ? 0.2 : 1 }"
+      :disabled="fileStore.page === fileStore.pages"
+      @click="setPage(fileStore.pages)"
+      />
   </div>
   </div>
+
   <div
-    class="fixed flex justify-center gap-8 bottom-6 left-0 right-0 pointer-events-none"
+    class="flex justify-center gap-12 pointer-events-none"
   >
     <div
       class="p-2 bg-slate-950/90 rounded-full shadow-lg shadow-black/25 z-10 pointer-events-auto border-none"
@@ -235,10 +272,11 @@
           <UButton
             icon="fluent:image-add-32-light"
             variant="solid"
-            size="sm"
             color="indigo"
             class="rounded-full p-2"
             :disabled="showActivity"
+            size="lg"
+            :ui="{ icon: { size: { lg: 'w-8 h-8' } } }"
             @click="uploadFiles"
           />
         </UTooltip>
@@ -249,10 +287,11 @@
           <UButton
             icon="fluent:color-background-24-regular"
             variant="solid"
-            size="sm"
             :color="fileStore.hasNonSquareFiles ? 'emerald' : 'white'"
             :disabled="!fileStore.hasNonSquareFiles || showActivity"
             class="rounded-full p-2"
+            size="lg"
+            :ui="{ icon: { size: { lg: 'w-8 h-8' } } }"
             @click="makeAllSquare"
           />
         </UTooltip>
@@ -263,18 +302,20 @@
           <UButton
             icon="fluent:slide-multiple-search-20-regular"
             variant="solid"
-            size="sm"
+            size="lg"
             class="rounded-full p-2"
             :disabled="
               loaders.hasActiveLoaders(Prefixes.ANALYZE) ||
               loaders.hasQueuedLoaders(Prefixes.ANALYZE) ||
               showActivity
             "
+            :ui="{ icon: { size: { lg: 'w-8 h-8' } } }"
             @click="analyzeDirectory"
           />
         </UTooltip>
       </div>
     </div>
+  </div>
   </div>
 
   <UModals />
@@ -308,9 +349,11 @@ import { useFiles } from "@/pinia/files";
 const fileStore = useFiles();
 const { visibleFiles } = storeToRefs(fileStore);
 
-import { useMakeSquare } from "#build/imports";
+import { useMakeSquare } from "~/composables/useMakeSquare";
 import TagSlideover from "~/components/ui/TagSlideover.vue";
 const { makeSquare } = useMakeSquare();
+
+const mediaRef = useTemplateRef("media-list");
 
 const mode = ref<"view" | "tag">("view");
 const tagOptCache = ref<Record<string, boolean>>({});
@@ -330,7 +373,7 @@ const openDirectoryModal = () => {
     directory: fileStore.directory,
     onSave: () => {
       modal.close();
-      resetPage();
+      setPage();
     },
   });
 };
@@ -339,7 +382,7 @@ const slideover = useSlideover();
 const openTagPanel = () => {
   slideover.open(TagSlideover, {
     onFilter: () => {
-      resetPage();
+      setPage();
     },
   });
 };
@@ -348,8 +391,9 @@ onMounted(async () => {
   tagStore.fetchModels();
   const directory = recall("directory");
   if (directory) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     await fileStore.setDirectory(directory);
-    resetPage();
+    setPage();
   } else {
     openDirectoryModal();
   }
@@ -369,8 +413,9 @@ const analyzeDirectory = async () => {
   stopAnimation();
 };
 
-const resetPage = async () => {
-  fileStore.setPage();
+const setPage = async (page: number = 1) => {
+  if (mediaRef.value) mediaRef.value.scrollTop = 0; 
+  fileStore.setPage(page);
 };
 
 const attemptMakeSquare = (file: ImageFile) => {
@@ -395,7 +440,6 @@ const resolveImageEdit = async (dataUrl: string, file: ImageFile) => {
   visibleFiles.value[index].resource = dataUrl;
 };
 
-const mediaRef = useTemplateRef("media-list");
 const uploadFiles = async () => {
   const input = document.createElement("input");
   input.type = "file";

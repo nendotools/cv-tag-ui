@@ -20,6 +20,7 @@ export default defineEventHandler((event: H3Event) => {
     const file = fs.readFileSync(path);
     setHeader(event, "Content-Type", "image/jpeg");
     setHeader(event, "Content-Length", file.length);
+    setHeader(event, "Cache-Control", "public, max-age=300");
     return file;
   }
 });

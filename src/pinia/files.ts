@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { useLoaders, Prefixes } from "./loaders";
+const worker = new Worker(new URL("../assets/workers/file.worker.ts", import.meta.url), { type: "module" });
 
 interface State {
   directory: string;
@@ -22,7 +23,7 @@ export const useFiles = defineStore("files", {
     kohyaFiles: {},
     loadingMedia: false,
     page: 1,
-    pageSize: 6,
+    pageSize: 20,
     refreshing: false,
     filters: {},
     appliedFilters: new Set<string>(),
@@ -64,7 +65,6 @@ export const useFiles = defineStore("files", {
 
         return true;
       });
-      console.log("filtered", filtered);
       return filtered.slice((state.page - 1) * state.pageSize, state.page * state.pageSize);
     },
     pages(state: State) {
@@ -141,7 +141,8 @@ export const useFiles = defineStore("files", {
     },
     async setDirectory(path: string) {
       this.directory = path;
-      await this.fetchFiles();
+      //await this.fetchFiles();
+      await this.workerFetchFiles();
     },
     async fetchFiles() {
       this.loadingMedia = true;
@@ -155,6 +156,24 @@ export const useFiles = defineStore("files", {
       this.files = files.files;
 
       this.loadingMedia = false;
+    },
+
+    async workerFetchFiles() {
+      // Send the API URL to the worker
+      worker.postMessage(this.directory);
+
+      // Listen for messages from the worker
+      worker.onmessage = this.setFiles;
+    },
+
+    setFiles(event: any) {
+      const { success, data, error } = event.data;
+      if (success) {
+        console.log('Received data:', data);
+        this.files.push(...data);
+      } else {
+        console.error('Error fetching data:', error);
+      }
     },
 
     async updateFile(file: ImageFile, data: Blob) {
