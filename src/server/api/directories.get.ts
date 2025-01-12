@@ -29,7 +29,6 @@ export default defineEventHandler(async (event: H3Event) => {
 
   setHeader(event, "Status", isValid ? "200" : "400");
   setHeader(event, "Content-Type", "application/json");
-  setHeader(event, "Cache-Control", "public, max-age=60");
   return {
     path,
     name: path.split("/").pop(),

@@ -7,6 +7,7 @@ interface State {
 
 export enum Prefixes {
   ANALYZE = "analyze:",
+  DIRSCAN = "scan-dir:",
 }
 
 export const useLoaders = defineStore("loaders", {

@@ -122,7 +122,6 @@ export const useFiles = defineStore("files", {
     },
     async setPage(page: number = 1) {
       this.page = Math.max(1, Math.min(page, Math.ceil(this.files.length / this.pageSize)));
-      console.log(this.visibleFiles);
     },
     async fetchDirectories(path: string) {
       const directories = await $fetch<{
@@ -156,7 +155,6 @@ export const useFiles = defineStore("files", {
     setFiles(event: any) {
       const { success, data, error } = event.data;
       if (success) {
-        console.log('Received data:', data);
         this.files.push(...data);
       } else {
         console.error('Error fetching data:', error);

@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { Prefixes, useLoaders } from "./loaders";
 
 export const KOHYA_FOLDER_PATTERN: RegExp = /^\d+[_]\w+[ ]\w+$/i;
 
@@ -54,11 +55,19 @@ export const useDirectory = defineStore("directory", {
     },
 
     async scanDirectories() {
+      const loader = useLoaders();
       for (const directory of this.relatedDirectories) {
+        loader.enqueue(`${Prefixes.DIRSCAN}${directory}`);
+      }
+
+      for (const directory of this.relatedDirectories) {
+        loader.dequeue(`${Prefixes.DIRSCAN}${directory}`);
+        loader.start(`${Prefixes.DIRSCAN}${directory}`);
         const res = await $fetch<ImageDirectory>(`/api/directories`, {
-          params: { path: encodeURIComponent(`${this.workingDirectory}/${directory}`) },
+          params: { path: encodeURIComponent(`${this.baseDirectory}/${directory}`) },
         });
         this.subDirectories[directory] = res;
+        loader.end(`${Prefixes.DIRSCAN}${directory}`);
       }
     },
 

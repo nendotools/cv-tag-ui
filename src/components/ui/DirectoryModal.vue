@@ -18,11 +18,14 @@
         </p>
       </div>
 
-      <div class="flex items-center space-x-2">
+      <div class="flex flex-col gap-2 space-x-2">
         <UInputMenu
           class="flex-1"
           placeholder="Directory path"
           :options="options"
+          value-attribute="id"
+          option-attribute="label"
+          :search-attributes="['id']"
           :popper="{
               placement: 'top-end',
           }"
@@ -30,16 +33,21 @@
           v-model:query="current"
           @input="onInput"
         />
-        <UButton v-if="kohyaParent" color="emerald" :loading="loading" :disabled="loading" @click="onSaveParent">
+        <div class="w-full flex flex-row justify-end gap-2">
+        <UButton v-if="kohyaParent && refocusing" color="emerald" :loading="loading" :disabled="loading" @click="onSaveParent">
           Use Parent
         </UButton>
+        <UButton v-if="refocusing" :loading="loading" :disabled="loading" @click="onSaveCurrent">
+          Use Current
+        </UButton>
+        </div>
       </div>
       <div v-if="directoryStore.relatedDirectories" class="flex flex-col gap-2 mt-4">
         <div v-for="opt, index in directoryStore.subDirectories" :key="index" class="w-full grid grid-cols-5 gap-2 items-center">
           <UButton
             class="col-span-2" 
             :color="isActive(opt) ? 'emerald' : 'gray'"
-            :icon="isActive(opt) ? 'fluent:folder-20-filled' : 'fluent:folder-20-regular'"
+            :icon="folderIcon(opt)"
             @click="directoryStore.activeDirectory = opt.name" >
             {{ opt.name }}
           </UButton>
@@ -79,6 +87,9 @@
 import { useRecall } from "~/pinia/recall";
 const { store } = useRecall();
 
+import { Prefixes, useLoaders } from "~/pinia/loaders";
+const loader = useLoaders();
+
 import { useFiles } from "@/pinia/files";
 const files = useFiles();
 
@@ -90,24 +101,35 @@ onMounted(() => {
   loading.value = false;
   current.value = directoryStore.baseDirectory;
   updateDirectoryList();
+
+  if(directoryStore.relatedDirectories.length) {
+    directoryStore.scanDirectories();
+  }
 });
 
 const current = ref<string>("");
-const options = ref<string[]>([]);
+const options = ref<{id:string, label:string}[]>([]);
 const loading = ref(false);
+
+const refocusing = computed(() => {
+  return current.value !== directoryStore.baseDirectory;
+});
 const parentDir = computed(() => current.value.split("/").slice(0, -1).join("/"));
 const kohyaParent = computed(() => {
   if (!options.value.length) return false;
-  return options.value.some((opt) => KOHYA_FOLDER_PATTERN.test(opt.split("/").pop() || ""));
+  return options.value.some((opt) => KOHYA_FOLDER_PATTERN.test(opt.id.split("/").pop() || ""));
 });
 
 const updateDirectoryList = async () => {
   // fetch directories from the server based on the current value
   // and update the options
   directoryStore.fetchDirectories(parentDir.value).then((res: string[]) => {
-    const opts: string[] = [];
+    const opts:{id:string, label:string}[] = [];
     res.forEach((inner) => {
-      opts.push(`${parentDir.value}/${inner}`);
+      opts.push({
+        id: `${parentDir.value}/${inner}`,
+        label: inner,
+      });
     });
     options.value = opts;
   });
@@ -128,16 +150,29 @@ const onSave = async () => {
   emit("save");
 };
 
+const onSaveCurrent = async () => {
+  loading.value = true;
+  await directoryStore.setDirectory(current.value, true);
+  store("directory", current.value);
+  loading.value = false;
+};
+
 const onSaveParent = async () => {
   loading.value = true;
   current.value = parentDir.value;
   await directoryStore.setDirectory(current.value, true);
   store("directory", current.value);
-
-  //emit("save");
+  loading.value = false;
 };
 
 const isActive = (dir: ImageDirectory) => {
   return directoryStore.activeDirectory === dir.name;
+};
+
+const folderIcon = (dir: ImageDirectory) => {
+  const activeState = isActive(dir) ? 'filled' : 'regular';
+  const scanState = loader.isLoading(`${Prefixes.DIRSCAN}${dir.name}`) ? '-search' : loader.isQueued(`${Prefixes.DIRSCAN}${dir.name}`) ? '-sync' : '';
+  const icon = `fluent:folder${scanState }-20-${activeState}`;
+  return icon;
 };
 </script>
