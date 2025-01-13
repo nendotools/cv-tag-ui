@@ -24,13 +24,12 @@
           placeholder="Directory path"
           :options="options"
           value-attribute="id"
-          option-attribute="label"
+          option-attribute="id"
           :search-attributes="['id']"
           :popper="{
               placement: 'top-end',
           }"
           v-model="current"
-          v-model:query="current"
           @input="onInput"
         />
         <div class="w-full flex flex-row justify-end gap-2">
@@ -42,33 +41,78 @@
         </UButton>
         </div>
       </div>
-      <div v-if="directoryStore.relatedDirectories" class="flex flex-col gap-2 mt-4">
+      <div v-if="subdirectories" class="flex flex-col gap-2 mt-4">
         <div v-for="opt, index in directoryStore.subDirectories" :key="index" class="w-full grid grid-cols-5 gap-2 items-center">
+          <div class="col-span-2 flex flex-row gap-1 align-enter">
+          <UButton color="rose" size="xs" icon="fluent:delete-20-regular" :disabled="isActive(opt)" @click="onRemove(opt)"/>
           <UButton
-            class="col-span-2" 
-            :color="isActive(opt) ? 'emerald' : 'gray'"
+            class="flex-1"
             :icon="folderIcon(opt)"
+            :color="isActive(opt) ? 'emerald' : 'gray'"
             @click="directoryStore.activeDirectory = opt.name" >
             {{ opt.name }}
           </UButton>
+          </div>
           <UBadge
+            class="w-full select-none"
             :variant="isActive(opt) ? 'subtle' : 'solid'" 
             :color="isActive(opt) ? 'emerald' : 'gray'"
             icon="fluent:image-20-regular">
             {{ opt.images }}
           </UBadge>
+          <UTooltip
+            text="TXT Tag Files"
+            :popper="{ arrow: true, placement: 'top' }"
+          >
           <UBadge
+            class="w-full select-none"
             :variant="isActive(opt) ? 'subtle' : 'solid'" 
             :color="isActive(opt) ? 'emerald' : 'gray'"
             icon="fluent:tag-20-regular">
             {{ opt.tags }}
           </UBadge>
+          </UTooltip>
+          <UTooltip
+            text="Cached Inferrence Results" 
+            :popper="{ arrow: true, placement: 'top' }"
+          >
           <UBadge
+            class="w-full select-none"
             :variant="isActive(opt) ? 'subtle' : 'solid'" 
             :color="isActive(opt) ? 'emerald' : 'gray'"
             icon="fluent:book-database-20-regular">
             {{ opt.scans }}
           </UBadge>
+          </UTooltip>
+        </div>
+        <div v-if="subdirectories && !showCreate" class="tw-full grid grid-cols-5 gap-2 items-center">
+          <UButton class="col-span-2" icon="fluent:folder-add-20-regular" @click="startCreate">
+            Create Directory
+          </UButton>
+        </div>
+        <div v-if="subdirectories && showCreate" class="tw-full grid grid-cols-5 gap-2 items-center">
+          <UButton icon="fluent:folder-prohibited-20-regular" color="rose" @click="cancelCreate">
+            Cancel
+          </UButton>
+          <UButton icon="fluent:folder-add-20-regular" @click="saveCreate">
+            Create
+          </UButton>
+          <UInput 
+            class="col-span-3"
+            placeholder="New Directory Name"
+            v-model="newDirname"
+            @input="validateName">
+            <template #trailing>
+              <UBadge
+              v-if="isKohya"
+                :color="isValidTarget ? 'emerald' : 'rose'"
+                :variant="isValidTarget ? 'subtle' : 'solid'"
+                icon="fluent:tag-20-regular">
+                {{ kohyaTarget }}
+              </UBadge>
+              <div v-else></div>
+            </template>
+          </UInput>
         </div>
       </div>
 
@@ -96,21 +140,63 @@ const files = useFiles();
 import { KOHYA_FOLDER_PATTERN, useDirectory } from "~/pinia/directory";
 const directoryStore = useDirectory();
 
+import { useTags } from "~/pinia/tags";
+const { rawTags } = storeToRefs(useTags());
+
 const emit = defineEmits(["save"]);
 onMounted(() => {
   loading.value = false;
   current.value = directoryStore.baseDirectory;
-  updateDirectoryList();
+  updateDirectoryList(parentDir.value);
 
   if(directoryStore.relatedDirectories.length) {
     directoryStore.scanDirectories();
   }
 });
 
+const showCreate = ref(false);
+const isKohya = ref(false);
+const kohyaTarget = ref<string>("");
+const newDirname = ref<string>("");
+const isValidTarget = computed(() => {
+  if (isKohya.value) {
+    return rawTags.value.includes(kohyaTarget.value);
+  }
+  return true;
+});
+const startCreate = () => {
+  showCreate.value = true;
+};
+const cancelCreate = () => {
+  showCreate.value = false;
+  kohyaTarget.value = "";
+  newDirname.value = "";
+  isKohya.value = false;
+};
+const saveCreate = async () => {
+  if (isKohya.value && isValidTarget.value) {
+    await directoryStore.createDirectory(newDirname.value);
+    showCreate.value = false;
+    kohyaTarget.value = "";
+    newDirname.value = "";
+    isKohya.value = false;
+  }
+};
+const validateName = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  isKohya.value = KOHYA_FOLDER_PATTERN.test(target.value);
+  if(isKohya.value) {
+    kohyaTarget.value = target.value.split(" ")[1];
+  }
+};
+
 const current = ref<string>("");
 const options = ref<{id:string, label:string}[]>([]);
 const loading = ref(false);
 
+const subdirectories = computed(() => {
+  return directoryStore.relatedDirectories;
+});
 const refocusing = computed(() => {
   return current.value !== directoryStore.baseDirectory;
 });
@@ -120,14 +206,14 @@ const kohyaParent = computed(() => {
   return options.value.some((opt) => KOHYA_FOLDER_PATTERN.test(opt.id.split("/").pop() || ""));
 });
 
-const updateDirectoryList = async () => {
+const updateDirectoryList = async (targetDir: string) => {
   // fetch directories from the server based on the current value
   // and update the options
-  directoryStore.fetchDirectories(parentDir.value).then((res: string[]) => {
+  directoryStore.fetchDirectories(targetDir).then((res: string[]) => {
     const opts:{id:string, label:string}[] = [];
     res.forEach((inner) => {
       opts.push({
-        id: `${parentDir.value}/${inner}`,
+        id: `${targetDir}/${inner}`,
         label: inner,
       });
     });
@@ -138,10 +224,9 @@ const updateDirectoryList = async () => {
 // on input, if the value ends in a slash, update the current value and fetch directories from the server
 const onInput = (e: Event) => {
   const target = e.target as HTMLInputElement;
-  current.value = target.value;
 
-  if (current.value.endsWith("/")) {
-    updateDirectoryList();
+  if (target.value.endsWith("/")) {
+    updateDirectoryList(target.value.slice(0, -1));
   }
 };
 
@@ -152,17 +237,23 @@ const onSave = async () => {
 
 const onSaveCurrent = async () => {
   loading.value = true;
-  await directoryStore.setDirectory(current.value, true);
+  await directoryStore.setDirectory(current.value);
   store("directory", current.value);
   loading.value = false;
 };
 
 const onSaveParent = async () => {
   loading.value = true;
-  current.value = parentDir.value;
+  options.value = [];
+  current.value = current.value.slice(0, current.value.lastIndexOf('/'))
+  updateDirectoryList(parentDir.value);
   await directoryStore.setDirectory(current.value, true);
   store("directory", current.value);
   loading.value = false;
+};
+
+const onRemove = async (dir: ImageDirectory) => {
+  await directoryStore.removeDirectory(dir.path);
 };
 
 const isActive = (dir: ImageDirectory) => {

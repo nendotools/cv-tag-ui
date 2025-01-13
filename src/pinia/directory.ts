@@ -74,10 +74,37 @@ export const useDirectory = defineStore("directory", {
     async setDirectory(path: string, asKohya: boolean = false) {
       this.activeDirectory = "";
       this.baseDirectory = path;
+      this.relatedDirectories = [];
+      this.subDirectories = {};
       if (asKohya) {
         await this.fetchDirectories(this.workingDirectory, true);
         await this.scanDirectories();
       }
+    },
+
+    async createDirectory(name: string) {
+      await $fetch(`/api/directories/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ path: `${this.workingDirectory}${name}` }),
+      });
+      this.setDirectory(this.baseDirectory, true);
+    },
+
+    async removeDirectory(path: string) {
+      await $fetch(`/api/directories`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ path }),
+      });
+
+      const cache = this.activeDirectory;
+      this.setDirectory(this.baseDirectory, true);
+      this.activeDirectory = cache;
     },
   },
 });

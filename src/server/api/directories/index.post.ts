@@ -3,14 +3,7 @@ import * as fs from "fs";
 
 export default defineEventHandler(async (event) => {
   const { path } = await readBody(event);
-  var isValid = false;
-  fs.stat(path, (err, stats) => {
-    if (err) {
-      console.error(err);
-      return;
-    }
-    isValid = stats.isDirectory();
-  });
+  var isValid = fs.statSync(path).isDirectory();
 
   const contents: string[] = [];
   const files = fs.readdirSync(path, { withFileTypes: true });
@@ -20,7 +13,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  setHeader(event, "Status", isValid ? "200" : "400");
+  setResponseStatus(event, isValid ? 200 : 400);
   setHeader(event, "Content-Type", "application/json");
   setHeader(event, "Cache-Control", "public, max-age=300");
   return {
