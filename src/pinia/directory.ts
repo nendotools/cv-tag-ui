@@ -20,6 +20,8 @@ export const useDirectory = defineStore("directory", {
 
   getters: {
     workingDirectory(state: State) {
+      if (state.baseDirectory === "") return '';
+      if (state.activeDirectory === "") return state.baseDirectory;
       return `${state.baseDirectory}/${state.activeDirectory}`;
     },
     isKohyaFolder(state: State) {
@@ -88,7 +90,7 @@ export const useDirectory = defineStore("directory", {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ path: `${this.workingDirectory}${name}` }),
+        body: JSON.stringify({ path: `${this.baseDirectory}/${name}` }),
       });
       this.setDirectory(this.baseDirectory, true);
     },

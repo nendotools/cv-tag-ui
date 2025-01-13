@@ -240,7 +240,18 @@ export const useFiles = defineStore("files", {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ file: file.path }),
+      }).catch(async (_) => {
+        // retry once after a delay
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        return await $fetch<{ high_tags: string[], low_tags: string[] }>("/inferrence/process_file", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ file: file.path }),
+        });
       });
+      console.log(json);
 
       file.highConfidenceTags = Object.keys(json.high_tags);
       file.lowConfidenceTags = Object.keys(json.low_tags);

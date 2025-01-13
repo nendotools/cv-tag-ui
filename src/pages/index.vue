@@ -206,7 +206,10 @@
 
   <!-- Bottom Rounded Toolbar -->
   <div class="w-full fixed flex flex-col-reverse justify-center items-center bottom-6 gap-2">
+
+    <!-- Navigation -->
   <div
+    v-if="visibleFiles.length"
     class="flex justify-center gap-8 pointer-events-none"
   >
     <div
@@ -256,7 +259,9 @@
   </div>
   </div>
 
+  <!-- Batch Tools -->
   <div
+    v-if="directoryStore.workingDirectory !== ''"
     class="flex justify-center gap-12 pointer-events-none"
   >
     <div
