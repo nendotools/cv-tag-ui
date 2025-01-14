@@ -48,7 +48,7 @@ export const useTags = defineStore("tags", {
       return categories;
     },
     rawTags: (state) =>
-      state.modelTags[state.activeModel].map((tag) => tag.name),
+      state.modelTags[state.activeModel].map((tag) => tag.name.replaceAll("_", " ")),
     generalTags: (state) =>
       state.modelTags[state.activeModel]
         .filter((tag) => tag.category === 0)

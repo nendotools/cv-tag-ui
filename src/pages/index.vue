@@ -162,7 +162,7 @@
                   }
                 ]"
               />
-              <div v-show="!tagOptCache[file.name]" class="ml-4 flex flex-row flex-wrap gap-2 m-4">
+              <div v-show="!tagOptCache[file.name]" class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4">
                 <ATag
                   v-for="tag in file.highConfidenceTags.length
                     ? file.highConfidenceTags
@@ -182,7 +182,7 @@
               </div>
               <div
                 v-show="tagOptCache[file.name]"
-                class="ml-4 flex flex-row flex-wrap gap-2 m-4"
+                class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4"
               >
                 <ATag
                   v-for="tag in [...file?.lowConfidenceTags]"
@@ -400,6 +400,9 @@ const openTagPanel = () => {
 onMounted(async () => {
   tagStore.fetchModels();
   const directory = recall("directory");
+  const threshold = recall("threshold");
+  if (threshold) fileStore.setThreshold(threshold);
+
   if (directory && directoryStore.baseDirectory === "") {
     directoryStore.setDirectory(directory, true);
   }

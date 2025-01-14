@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { useLoaders, Prefixes } from "./loaders";
+import { useRecall } from "./recall";
 const worker = new Worker(new URL("../assets/workers/file.worker.ts", import.meta.url), { type: "module" });
 
 interface State {
@@ -40,6 +41,19 @@ export const useFiles = defineStore("files", {
           return new Set([...acc, ...tags]);
         }, new Set()),
       );
+    },
+    aggregateTags: (state) => {
+      const tags: Record<string, number> = {};
+      for (const file of state.files) {
+        for (const tag of [...file.highConfidenceTags, ...file.lowConfidenceTags]) {
+          if (tags[tag]) {
+            tags[tag]++;
+          } else {
+            tags[tag] = 1;
+          }
+        }
+      }
+      return tags;
     },
     visibleFiles(state: State) {
       // if the filter is an "and" filter, all tags must be present
@@ -105,9 +119,12 @@ export const useFiles = defineStore("files", {
 
   actions: {
     async setThreshold(threshold: number) {
+      const recall = useRecall();
       if (threshold < 0 || threshold > 100) {
         throw new Error("Threshold must be between 0 and 100");
       }
+
+      recall.store("threshold", threshold);
       this.threshold = threshold / 100;
     },
     async applyFilter(name: string) {

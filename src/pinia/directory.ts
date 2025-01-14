@@ -109,6 +109,21 @@ export const useDirectory = defineStore("directory", {
       this.activeDirectory = cache;
     },
 
+    async cleanDirectory(path?: string) {
+      if (!path) path = this.workingDirectory;
+      console.log(`Cleaning directory: ${path}`);
+      const res = await $fetch<{
+        count: number;
+      }>(`/api/directories/clean`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ path }),
+      });
+      return res.count;
+    },
+
     async dedupeDirectory(path?: string) {
       if (!path) path = this.workingDirectory;
       const res = await $fetch<{
