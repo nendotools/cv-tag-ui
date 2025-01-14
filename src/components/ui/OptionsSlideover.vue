@@ -6,7 +6,7 @@
         class="row-span-1 col-span-1 border-b border-gray-200 dark:border-gray-800"
       />
 
-      <!-- Settings, Create Filter, Store Tags, Browse Tags -->
+      <!-- Settings, Model Options, Cleanup Tools -->
       <div v-if="mode === 'settings'" class="p-4 row-span-1 col-span-1">
         <h2 class="text-lg p-2">Analysis Settings</h2>
         <div class="pl-4 py-2 gap-2 flex flex-col gap-1">
@@ -23,28 +23,64 @@
             path: {{ directoryStore.workingDirectory }}
           </div>
           <div class="flex flex-col text-sm text-gray-500 dark:text-gray-400">
-          <UButton color="rose" :disabled="removedFiles != null" @click="handleDedup">Remove Duplicates</UButton>
+          <UButton class="justify-center" color="rose" :disabled="removedFiles != null" @click="handleDedup">Remove Duplicates</UButton>
             <span class="pl-4">{{ removedFiles != null ? `Removed ${removedFiles} files` : "" }}</span>
           </div>
           <div class="flex flex-col text-sm text-gray-500 dark:text-gray-400">
-          <UButton color="rose" :disabled="removedTags != null" @click="handleClean">Remove Orphaned Tags</UButton>
+          <UButton class="justify-center" color="rose" :disabled="removedTags != null" @click="handleClean">Remove Orphaned Tags</UButton>
             <span class="pl-4">{{ removedTags != null ? `Removed ${removedTags} files` : "" }}</span>
           </div>
         </div>
       </div>
 
+      <!-- Tag Tools, Batch Add/Remove, Quick Filters -->
       <div v-if="mode === 'tags'" class="p-4 row-span-1 col-span-1">
-        <h2 class="text-lg p-2">Bulk Add/Remove</h2>
+        <h2 class="text-lg p-2">Kohya Tags</h2>
+        <div class="pl-4 gap-2 flex flex-col gap-1 text-xs text-slate-300/60">
+          When the working directory appears to be a Kohya directory, applicable tags can be quickly managed here.
+          <div class="grid grid-cols-2 items-center gap-2">
+            <span class="text-primary">New Class: {{ kohyaSettings?.newClassName || 'none' }}</span>
+            <UButton class="flex-1 justify-center" color="emerald" :disabled="!kohyaSettings" @click="fileStore.bulkAddTag([kohyaSettings!.newClassName])">
+              Add [{{ kohyaSettings ? fileStore.files.length - (fileStore.appliedTags[kohyaSettings?.newClassName] || 0) : 0 }}] Class Tags
+            </UButton>
+          </div>
+          <div class="grid grid-cols-2 items-center gap-2">
+            <span class="text-primary">Origin Class: {{ kohyaSettings?.className || 'none' }}</span>
+            <UButton class="flex-1 justify-center" color="rose" :disabled="!kohyaSettings" @click="fileStore.bulkRemoveTag([kohyaSettings!.className])">
+              Remove [{{ kohyaSettings ? fileStore.appliedTags[kohyaSettings?.className] || 0 : 0 }}] Class Tags
+            </UButton>
+          </div>
+        </div>
+
+        <h2 class="text-lg p-2 mt-4">Batch Add/Remove</h2>
         <div class="pl-4 gap-2 flex flex-col gap-1 text-xs text-slate-300/60">
           Create a list of tags to add or remove from all files in the working directory.
-          <UInputMenu placeholder="Search tags" v-model="tagSearch" :options="queryTags">
+          <div class="w-full flex flex-row gap-2">
+          <UInputMenu class="flex-1" placeholder="Search tags" v-model="tagSearch" :search="queryTags">
             <template #option="{ option }">
               <div class="flex flex-row justify-between gap-2">
-                <span class="text-primary">[{{ fileStore.aggregateTags[option] }}]</span>
+                <span class="text-primary">[{{ fileStore.aggregateTags[option] || 0 }}]</span>
                 <span>{{ option }}</span>
               </div>
             </template>
           </UInputMenu>
+          <UButton class="shrink-1" @click="setTag">Append Tag</UButton>
+          </div>
+          <div v-if="bulkTagList.size" class="w-full flex flex-row gap-2">
+            <div class="flex flex-col flex-1 gap-2">
+              <div class="flex flex-row flex-wrap gap-2 border border-slate-600 p-2 rounded-lg">
+                <ATag v-for="tag in bulkTagList" :key="tag" :label="tag" :exists="true" @delete="removeTag(tag)" />
+              </div>
+              <div class="flex flex-row justify-between">
+                <UButton color="rose" @click="bulkTagAction = 'remove'">Remove All</UButton>
+                <UButton color="emerald" @click="bulkTagAction = 'add'">Add All</UButton>
+              </div>
+            </div>
+
+            <div class="flex flex-col">
+              <UButton :icon="previewTags ? 'fluent:eye-20-filled' : 'fluent:eye-off-20-filled'" color="gray" variant="link" @click="togglePreview" />
+            </div>
+          </div>
         </div>
 
         <h2 class="text-lg p-2">Quick Filters</h2>
@@ -120,10 +156,12 @@
 </template>
 
 <script setup lang="ts">
-import { useDirectory } from "~/pinia/directory";
+import { KOHYA_FOLDER_PATTERN, useDirectory } from "~/pinia/directory";
 import { useFiles } from "~/pinia/files";
 import { useTags } from "~/pinia/tags";
+import ATag from "./ATag.vue";
 const directoryStore = useDirectory();
+const { kohyaSettings } = storeToRefs(directoryStore);
 const fileStore = useFiles();
 const tagStore = useTags();
 const {
@@ -144,6 +182,10 @@ onMounted(() => {
   threshold.value = fileStore.threshold*100;
   removedFiles.value = null;
   removedFiles.value = null;
+
+  if (fileStore.filterPreview.size) {
+    bulkTagList.value = new Set(fileStore.filterPreview);
+  }
 });
 
 const threshold = ref<number>(0);
@@ -161,12 +203,13 @@ const handleClean = async () => {
   removedTags.value = count;
 };
 
-const bulkTagList = ref<Set<string>>(new Set());
 const tagSearch = ref<string>("");
+const previewTags = ref<boolean>(true);
+const bulkTagList = ref<Set<string>>(new Set());
 const bulkTagAction = ref<"add" | "remove">("add");
-const queryTags = computed(() => {
+const queryTags = async (q:string) => {
   // if empty, return top 10 known tags
-  if (tagSearch.value.length < 1) {
+  if (q.length < 1) {
     // return top 10 results from aggregated tags list on fileStore
     // need to sort Record<string, number> by value and return the keys
     return Object.keys(fileStore.aggregateTags)
@@ -174,16 +217,42 @@ const queryTags = computed(() => {
       .slice(0, 10);
   }
   return rawTags.value
-    .filter((tag) => tag.includes(tagSearch.value))
-    // sort by exact match, then by length, then by alphabetical order
+    .filter((tag) => tag.includes(q))
+    // sort by exact match, then by occurrence, then by length, then by alphabetical order
     .sort((a, b) => {
-      if (a === tagSearch.value) return -1;
-      if (b === tagSearch.value) return 1;
-      if (a.length === b.length) return a.localeCompare(b);
-      return a.length - b.length;
+      if (a === q) return -1;
+      if (b === q) return 1;
+      const aRank = fileStore.aggregateTags[a] || 0;
+      const bRank = fileStore.aggregateTags[b] || 0;
+      if (aRank !== bRank) return bRank - aRank;
+      if(a.length !== b.length) return a.length - b.length;
+      return a.localeCompare(b);
     })
     .slice(0, 20);
-});
+};
+const togglePreview = () => {
+  previewTags.value = !previewTags.value;
+  if (previewTags.value) {
+    fileStore.setPreview(bulkTagList.value);
+  } else {
+    fileStore.setPreview();
+  }
+};
+const removeTag = (tag: string)=> {
+  bulkTagList.value.delete(tag);
+  if (previewTags.value) {
+    fileStore.setPreview(bulkTagList.value);
+  }
+};
+const setTag = (_: KeyboardEvent) => {
+  if (tagSearch.value.length < 1) return;
+    bulkTagList.value.add(tagSearch.value);
+  if (previewTags.value) {
+    fileStore.setPreview(bulkTagList.value);
+  }
+
+  tagSearch.value = "";
+};
 
 const newFilter = ref<string>("");
 const activeFilter = ref<string>("");

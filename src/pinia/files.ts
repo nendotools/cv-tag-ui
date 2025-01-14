@@ -5,7 +5,6 @@ const worker = new Worker(new URL("../assets/workers/file.worker.ts", import.met
 
 interface State {
   directory: string;
-  kohyaDirs: string[];
   files: ImageFile[];
   kohyaFiles: Record<string, ImageFile[]>;
   loadingMedia: boolean;
@@ -14,6 +13,7 @@ interface State {
   refreshing: boolean;
   filters: Record<string, AndFilter | OrFilter>;
   appliedFilters: Set<string>;
+  filterPreview: Set<string>;
 
   threshold: number;
 }
@@ -22,7 +22,6 @@ export const useFiles = defineStore("files", {
   state: (): State => ({
     directory: "",
     files: [],
-    kohyaDirs: [],
     kohyaFiles: {},
     loadingMedia: false,
     page: 1,
@@ -30,6 +29,7 @@ export const useFiles = defineStore("files", {
     refreshing: false,
     filters: {},
     appliedFilters: new Set<string>(),
+    filterPreview: new Set<string>(),
     threshold: 0.35,
   }),
 
@@ -55,7 +55,27 @@ export const useFiles = defineStore("files", {
       }
       return tags;
     },
+    appliedTags(state: State) {
+      const tags: Record<string, number> = {};
+      for (const file of state.files) {
+        for (const tag of file.highConfidenceTags) {
+          if (tags[tag]) {
+            tags[tag]++;
+          } else {
+            tags[tag] = 1;
+          }
+        }
+      }
+      return tags;
+    },
     visibleFiles(state: State) {
+      if (state.filterPreview.size) {
+        const previewTags = Array.from(state.filterPreview);
+        const f = state.files.filter((f) =>
+          previewTags.some((tag) => f.highConfidenceTags.includes(tag)),
+        );
+        return f.slice((state.page - 1) * state.pageSize, state.page * state.pageSize);
+      }
       // if the filter is an "and" filter, all tags must be present
       // if the filter is an "or" filter, at least one tag must be present
       // multiple filters are combined with "and" (all ANDs must be true, each OR must have at least one true)
@@ -85,6 +105,15 @@ export const useFiles = defineStore("files", {
       return filtered.slice((state.page - 1) * state.pageSize, state.page * state.pageSize);
     },
     pages(state: State) {
+      if (state.filterPreview.size) {
+        const previewTags = Array.from(state.filterPreview);
+        const f = state.files.filter((f) =>
+          previewTags.some((tag) => f.highConfidenceTags.includes(tag)),
+        );
+
+        return Math.ceil(f.length / state.pageSize);
+      }
+
       let allAnds = new Set<string>();
       const orGroups: Set<string>[] = [];
       for (const filter of state.appliedFilters) {
@@ -118,6 +147,9 @@ export const useFiles = defineStore("files", {
   },
 
   actions: {
+    async setPreview(tags: Set<string> = new Set()) {
+      this.filterPreview = tags;
+    },
     async setThreshold(threshold: number) {
       const recall = useRecall();
       if (threshold < 0 || threshold > 100) {
@@ -199,15 +231,18 @@ export const useFiles = defineStore("files", {
       return response;
     },
 
-    async addTag(file: ImageFile, tag: string) {
+    async addTag(file: ImageFile, tags: string[]) {
       const fileIndex = this.files.findIndex((f) => f.path === file.path);
       if (fileIndex !== -1) {
-        this.files[fileIndex].highConfidenceTags.push(tag);
+        for (const t of tags) {
+          this.files[fileIndex].highConfidenceTags.push(t);
+        }
+
         this.files[fileIndex].lowConfidenceTags = this.files[
           fileIndex
-        ].lowConfidenceTags.filter((t) => t !== tag);
+        ].lowConfidenceTags.filter((t) => !tags.includes(t));
       }
-      console.log("Adding tag", tag, "to", file.path);
+      console.log("Adding tags", tags, "to", file.path);
 
       // update server
       await $fetch("/api/tags", {
@@ -215,19 +250,31 @@ export const useFiles = defineStore("files", {
         headers: {
           "Content-Type": "application/json",
         },
-        body: { path: file.path, add: [tag], remove: [] },
+        body: { path: file.path, add: [tags], remove: [] },
       });
     },
 
-    async removeTag(file: ImageFile, tag: string) {
+    // bulk tag addition for all active files
+    async bulkAddTag(tags: string[]) {
+      for (const file of this.files) {
+        const applicableTags = tags.filter((t) => !file.highConfidenceTags.includes(t));
+        if (applicableTags.length > 0) {
+          this.addTag(file, applicableTags);
+        }
+      }
+    },
+
+    async removeTag(file: ImageFile, tags: string[]) {
       const fileIndex = this.files.findIndex((f) => f.path === file.path);
       if (fileIndex !== -1) {
         this.files[fileIndex].highConfidenceTags = this.files[
           fileIndex
-        ].highConfidenceTags.filter((t) => t !== tag);
-        this.files[fileIndex].lowConfidenceTags.push(tag);
+        ].highConfidenceTags.filter((t) => !tags.includes(t));
+        for (const t of tags) {
+          this.files[fileIndex].lowConfidenceTags.push(t);
+        }
       }
-      console.log("Removing tag", tag, "from", file.path);
+      console.log("Removing tag", tags, "from", file.path);
 
       // update server
       await $fetch("/api/tags", {
@@ -235,8 +282,18 @@ export const useFiles = defineStore("files", {
         headers: {
           "Content-Type": "application/json",
         },
-        body: { path: file.path, add: [], remove: [tag] },
+        body: { path: file.path, add: [], remove: [tags] },
       });
+    },
+
+    // bulk tag removal for all active files
+    async bulkRemoveTag(tags: string[]) {
+      for (const file of this.files) {
+        const applicableTags = tags.filter((t) => file.highConfidenceTags.includes(t));
+        if (applicableTags.length > 0) {
+          this.removeTag(file, applicableTags);
+        }
+      }
     },
 
     async deleteFile(filePath: string) {

@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { Prefixes, useLoaders } from "./loaders";
 
 export const KOHYA_FOLDER_PATTERN: RegExp = /^\d+[_]\w+[ ]\w+$/i;
+export const KOHYA_FOLDER_REGEX: RegExp = /(\d+)[_](\w+)[ ](\w+)/i;
 
 interface State {
   baseDirectory: string;
@@ -26,6 +27,16 @@ export const useDirectory = defineStore("directory", {
     },
     isKohyaFolder(state: State) {
       return KOHYA_FOLDER_PATTERN.test(state.activeDirectory);
+    },
+    kohyaSettings(state: State) {
+      if (!state.activeDirectory) return null;
+      if (!KOHYA_FOLDER_PATTERN.test(state.activeDirectory)) return null;
+      const match = state.activeDirectory.match(KOHYA_FOLDER_REGEX);
+      return {
+        repeats: parseInt(match![1]),
+        newClassName: match![2],
+        className: match![3],
+      };
     },
     containsKohyaFolder(state: State) {
       return state.relatedDirectories.some((dir) => KOHYA_FOLDER_PATTERN.test(dir));

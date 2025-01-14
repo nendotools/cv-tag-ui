@@ -171,7 +171,7 @@
                   :label="tag"
                   :exists="true"
                   :simple="mode !== 'tag'"
-                  @delete="fileStore.removeTag(file, tag)"
+                  @delete="fileStore.removeTag(file, [tag])"
                 />
 
                 <div
@@ -190,7 +190,7 @@
                   :label="tag"
                   :exists="false"
                   :simple="mode !== 'tag'"
-                  @add="fileStore.addTag(file, tag)"
+                  @add="fileStore.addTag(file, [tag])"
                 />
 
                 <div v-if="!file?.lowConfidenceTags?.length">
