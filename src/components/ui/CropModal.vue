@@ -29,7 +29,21 @@
           :src="image.resource"
           :default-size="image.dimensions"
           :options="{ aspectRatio: 1 }"
+          :stencil-props="{
+              aspectRatio
+            }"
         />
+
+        <div class="w-full flex justify-center gap-4">
+          <UButton
+            v-for="ratio in Object.keys(ratioOptions)"
+            :key="ratio"
+            variant="soft"
+            :color="aspectRatio === ratioOptions[ratio as keyof typeof ratioOptions] ? 'primary' : 'black'"
+            @click="setAspectRatio(ratio as keyof typeof ratioOptions)">
+            {{ ratio }}
+          </UButton>
+        </div>
       </div>
 
       <template #footer>
@@ -54,6 +68,16 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(["close"]);
+const aspectRatio = ref<null | number>(null);
+const ratioOptions = {
+  free: null,
+  square: 1,
+  portrait: 0.75,
+  landscape: 1.33,
+};
+const setAspectRatio = (ratio: keyof typeof ratioOptions) => {
+  aspectRatio.value = ratioOptions[ratio];
+};
 
 const handleSave = () => {
   if (cropper.value) {

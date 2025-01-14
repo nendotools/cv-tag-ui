@@ -78,7 +78,7 @@
                   :popper="{ arrow: true, placement: 'top' }"
                 >
                   <UButton
-                    icon="fluent:color-background-24-regular"
+                    icon="fluent:color-background-20-regular"
                     :color="isSquare(file) ? 'white' : 'emerald'"
                     class="rounded-full p-2"
                     variant="solid"
@@ -292,7 +292,7 @@
           :popper="{ arrow: true, placement: 'top' }"
         >
           <UButton
-            icon="fluent:color-background-24-regular"
+            icon="fluent:color-background-20-regular"
             variant="solid"
             :color="fileStore.hasNonSquareFiles ? 'emerald' : 'white'"
             :disabled="!fileStore.hasNonSquareFiles || showActivity"
