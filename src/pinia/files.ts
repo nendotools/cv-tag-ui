@@ -13,6 +13,8 @@ interface State {
   refreshing: boolean;
   filters: Record<string, AndFilter | OrFilter>;
   appliedFilters: Set<string>;
+
+  threshold: number;
 }
 
 export const useFiles = defineStore("files", {
@@ -27,6 +29,7 @@ export const useFiles = defineStore("files", {
     refreshing: false,
     filters: {},
     appliedFilters: new Set<string>(),
+    threshold: 0.35,
   }),
 
   getters: {
@@ -101,6 +104,12 @@ export const useFiles = defineStore("files", {
   },
 
   actions: {
+    async setThreshold(threshold: number) {
+      if (threshold < 0 || threshold > 100) {
+        throw new Error("Threshold must be between 0 and 100");
+      }
+      this.threshold = threshold / 100;
+    },
     async applyFilter(name: string) {
       this.appliedFilters.add(name);
     },
@@ -239,7 +248,7 @@ export const useFiles = defineStore("files", {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ file: file.path }),
+        body: JSON.stringify({ file: file.path, threshold: this.threshold }),
       }).catch(async (_) => {
         // retry once after a delay
         await new Promise((resolve) => setTimeout(resolve, 250));
@@ -248,7 +257,7 @@ export const useFiles = defineStore("files", {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ file: file.path }),
+          body: JSON.stringify({ file: file.path, threshold: this.threshold }),
         });
       });
       console.log(json);
@@ -294,7 +303,6 @@ export const useFiles = defineStore("files", {
       for (const file of response.files) {
         await this.analyzeImage(file);
       }
-      this.pageSize = 20 + files.length;
     },
 
     async moveFiles(file: ImageFile, target: string, preserve: boolean = false) {

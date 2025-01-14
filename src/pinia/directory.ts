@@ -108,5 +108,24 @@ export const useDirectory = defineStore("directory", {
       this.setDirectory(this.baseDirectory, true);
       this.activeDirectory = cache;
     },
+
+    async dedupeDirectory(path?: string) {
+      if (!path) path = this.workingDirectory;
+      const res = await $fetch<{
+        status: string;
+        count: number;
+        pruned_files: string[];
+      }>(`/inferrence/dedupe_files`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ dir: path }),
+      });
+      return {
+        count: res.count,
+        prunedFiles: res.pruned_files
+      };
+    },
   },
 });

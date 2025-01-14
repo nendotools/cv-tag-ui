@@ -6,12 +6,31 @@
         class="row-span-1 col-span-1 border-b border-gray-200 dark:border-gray-800"
       />
 
-      <!-- Create Filter, Store Tags, Browse Tags -->
+      <!-- Settings, Create Filter, Store Tags, Browse Tags -->
+      <div v-if="mode === 'settings'" class="p-4 row-span-1 col-span-1">
+        <h2 class="text-lg p-2">Analysis Settings</h2>
+        <div class="pl-4">
+          <label>
+            <span class="text-sm">Tag Confidence: <span class="text-primary">{{ threshold }}%</span></span>
+          <URange :min="0" :max="100" v-model="threshold" @change="setThreshold" />
+          </label>
+        </div>
+        <h2 class="text-lg p-2">Clean-up</h2>
+        <div class="flex flex-col gap-2 pl-4">
+          <div class="flex flex-col text-sm text-gray-500 dark:text-gray-400">
+          <UButton color="rose" :disabled="removedFiles != null" @click="handleDedup">Remove Duplicates</UButton>
+            <span class="pl-4">{{ removedFiles != null ? `Removed ${removedFiles} files` : "" }}</span>
+          </div>
+          <UButton color="primary">Remove Unused Tags</UButton>
+          <UButton color="primary">Remove Unused Filters</UButton>
+        </div>
+      </div>
+
       <div v-if="mode === 'create'" class="p-4 row-span-1 col-span-1">
         <h3>New Filter</h3>
         <div class="flex flex-row gap-2">
-        <UInput placeholder="Filter Name" v-model="newFilter" @keypress.enter="createFilter" />
-        <UButton @click="createFilter">Add Filter</UButton>
+          <UInput placeholder="Filter Name" v-model="newFilter" @keypress.enter="createFilter" />
+          <UButton @click="createFilter">Add Filter</UButton>
         </div>
 
         <UInputMenu v-if="activeFilter.length" placeholder="Search tags" v-model="search" :search="suggestedTags" @keypress.enter="addFilterTag" />
@@ -81,8 +100,10 @@
 </template>
 
 <script setup lang="ts">
+import { useDirectory } from "~/pinia/directory";
 import { useFiles } from "~/pinia/files";
 import { useTags } from "~/pinia/tags";
+const directoryStore = useDirectory();
 const fileStore = useFiles();
 const tagStore = useTags();
 const {
@@ -99,6 +120,20 @@ const {
 } = storeToRefs(tagStore);
 
 const emits = defineEmits(["filter"]);
+onMounted(() => {
+  threshold.value = fileStore.threshold*100;
+  removedFiles.value = null;
+});
+
+const threshold = ref<number>(0);
+const setThreshold = () => {
+  fileStore.setThreshold(threshold.value);
+};
+const removedFiles = ref<number | null>(null);
+const handleDedup = async () => {
+  const { count }= await directoryStore.dedupeDirectory();
+  removedFiles.value = count;
+};
 
 const newFilter = ref<string>("");
 const activeFilter = ref<string>("");
@@ -132,8 +167,13 @@ const addFilterTag = (_: KeyboardEvent) => {
   search.value = "";
 };
 
-const mode = ref<"create" | "store" | "browse">("browse");
+const mode = ref<"settings" | "create" | "store" | "browse">("settings");
 const links = computed(() => [
+  {
+    label: "Settings",
+    click: () => (mode.value = "settings"),
+    active: mode.value === "settings",
+  },
   {
     label: "Create Filter",
     click: () => (mode.value = "create"),

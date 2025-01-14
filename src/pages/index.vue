@@ -26,8 +26,8 @@
         <UButton size="xs" variant="outline" @click="openDirectoryModal">
           Change Directory
         </UButton>
-        <UButton size="xs" variant="solid" @click="openTagPanel">
-          Tag Panel
+        <UButton size="xs" variant="solid" icon="fluent:options-20-regular" @click="openTagPanel">
+          Options 
         </UButton>
       </div>
     </template>
@@ -207,7 +207,7 @@
   </div>
 
   <!-- Bottom Rounded Toolbar -->
-  <div class="w-full fixed flex flex-col-reverse justify-center items-center bottom-6 gap-2">
+  <div class="w-full fixed flex flex-col-reverse justify-center items-center bottom-6 gap-2 pointer-events-none">
 
     <!-- Navigation -->
   <div
@@ -361,7 +361,7 @@ const fileStore = useFiles();
 const { visibleFiles } = storeToRefs(fileStore);
 
 import { useMakeSquare } from "~/composables/useMakeSquare";
-import TagSlideover from "~/components/ui/TagSlideover.vue";
+import OptionsSlideover from "~/components/ui/OptionsSlideover.vue";
 const { makeSquare } = useMakeSquare();
 
 const mediaRef = useTemplateRef("media-list");
@@ -390,7 +390,7 @@ const openDirectoryModal = () => {
 
 const slideover = useSlideover();
 const openTagPanel = () => {
-  slideover.open(TagSlideover, {
+  slideover.open(OptionsSlideover, {
     onFilter: () => {
       setPage();
     },
@@ -400,12 +400,10 @@ const openTagPanel = () => {
 onMounted(async () => {
   tagStore.fetchModels();
   const directory = recall("directory");
-  if (directory) {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    directoryStore.setDirectory(directory);
-  } else {
-    openDirectoryModal();
+  if (directory && directoryStore.baseDirectory === "") {
+    directoryStore.setDirectory(directory, true);
   }
+  openDirectoryModal();
   animateRotation();
 });
 
