@@ -39,7 +39,7 @@
       class="h-dvh flex flex-col justify-start items-stretch p-8 gap-4 overflow-y-auto pb-48"
     >
       <UCard v-for="file in visibleFiles" :key="file.name">
-        <div class="grid items-center grid-cols-4">
+        <div class="grid items-center grid-cols-5">
           <!-- Image and Image tools -->
           <div
             class="relative flex flex-col items-center justify-center overflow-hidden col-span-1"
@@ -199,6 +199,8 @@
               </div>
             </div>
           </div>
+
+          <SendMenu :file="file" />
         </div>
       </UCard>
     </div>
@@ -337,6 +339,7 @@
 import { storeToRefs } from "pinia";
 
 import ATag from "~/components/ui/ATag.vue";
+import SendMenu from "~/components/ui/SendMenu.vue";
 import AHeader from "~/components/ui/AHeader.vue";
 import CropModal from "~/components/ui/CropModal.vue";
 import DirectoryModal from "~/components/ui/DirectoryModal.vue";

@@ -296,5 +296,20 @@ export const useFiles = defineStore("files", {
       }
       this.pageSize = 20 + files.length;
     },
+
+    async moveFiles(file: ImageFile, target: string, preserve: boolean = false) {
+      await $fetch<{ path: string; isValid: boolean; error?: string }>(
+        `/api/files/move`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ path: file.path, target, preserve }),
+        });
+      if (!preserve) {
+        this.files = this.files.filter((f) => f.path !== file.path);
+      }
+    },
   },
 });
