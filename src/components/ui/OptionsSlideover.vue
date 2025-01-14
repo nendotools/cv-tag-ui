@@ -59,7 +59,7 @@
           <UInputMenu class="flex-1" placeholder="Search tags" v-model="tagSearch" :search="queryTags">
             <template #option="{ option }">
               <div class="flex flex-row justify-between gap-2">
-                <span class="text-primary">[{{ fileStore.aggregateTags[option] || 0 }}]</span>
+                <span class="text-primary">[{{ fileStore.aggregateTags[option] || rawTags.includes(option) ? 0 : 'new' }}]</span>
                 <span>{{ option }}</span>
               </div>
             </template>
@@ -72,8 +72,8 @@
                 <ATag v-for="tag in bulkTagList" :key="tag" :label="tag" :exists="true" @delete="removeTag(tag)" />
               </div>
               <div class="flex flex-row justify-between">
-                <UButton color="rose" @click="bulkTagAction = 'remove'">Remove All</UButton>
-                <UButton color="emerald" @click="bulkTagAction = 'add'">Add All</UButton>
+                <UButton color="rose" @click="bulkAction('remove')">Remove All</UButton>
+                <UButton color="emerald" @click="bulkAction('add')">Add All</UButton>
               </div>
             </div>
 
@@ -156,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { KOHYA_FOLDER_PATTERN, useDirectory } from "~/pinia/directory";
+import { useDirectory } from "~/pinia/directory";
 import { useFiles } from "~/pinia/files";
 import { useTags } from "~/pinia/tags";
 import ATag from "./ATag.vue";
@@ -216,7 +216,7 @@ const queryTags = async (q:string) => {
       .sort((a, b) => fileStore.aggregateTags[b] - fileStore.aggregateTags[a])
       .slice(0, 10);
   }
-  return rawTags.value
+  return [...new Set([q, ...rawTags.value
     .filter((tag) => tag.includes(q))
     // sort by exact match, then by occurrence, then by length, then by alphabetical order
     .sort((a, b) => {
@@ -228,7 +228,7 @@ const queryTags = async (q:string) => {
       if(a.length !== b.length) return a.length - b.length;
       return a.localeCompare(b);
     })
-    .slice(0, 20);
+    .slice(0, 20)])];
 };
 const togglePreview = () => {
   previewTags.value = !previewTags.value;
@@ -238,6 +238,15 @@ const togglePreview = () => {
     fileStore.setPreview();
   }
 };
+const bulkAction = (mode: "add" | "remove") => {
+  if (mode === "add") {
+    fileStore.bulkAddTag(Array.from(bulkTagList.value));
+  } else {
+    fileStore.bulkRemoveTag(Array.from(bulkTagList.value));
+  }
+  bulkTagList.value.clear();
+  fileStore.setPreview();
+};
 const removeTag = (tag: string)=> {
   bulkTagList.value.delete(tag);
   if (previewTags.value) {
@@ -245,6 +254,7 @@ const removeTag = (tag: string)=> {
   }
 };
 const setTag = (_: KeyboardEvent) => {
+  console.log(tagSearch.value);
   if (tagSearch.value.length < 1) return;
     bulkTagList.value.add(tagSearch.value);
   if (previewTags.value) {
