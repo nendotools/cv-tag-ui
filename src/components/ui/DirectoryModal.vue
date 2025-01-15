@@ -209,11 +209,12 @@ const kohyaParent = computed(() => {
 const updateDirectoryList = async (targetDir: string) => {
   // fetch directories from the server based on the current value
   // and update the options
+  if (targetDir === "") targetDir = "/";
   directoryStore.fetchDirectories(targetDir).then((res: string[]) => {
     const opts:{id:string, label:string}[] = [];
     res.forEach((inner) => {
       opts.push({
-        id: `${targetDir}/${inner}`,
+        id: `${targetDir === "/"?"":targetDir}/${inner}`,
         label: inner,
       });
     });

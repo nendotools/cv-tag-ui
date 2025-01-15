@@ -39,7 +39,7 @@
       class="h-dvh flex flex-col justify-start items-stretch p-8 gap-4 overflow-y-auto pb-48"
     >
       <UCard v-for="file in visibleFiles" :key="file.name">
-        <div class="grid items-center grid-cols-5">
+        <div class="grid items-center landscape:grid-cols-5 portrait:grid-cols-1 grid-rows-auto">
           <!-- Image and Image tools -->
           <div
             class="relative flex flex-col items-center justify-center overflow-hidden col-span-1"
@@ -120,12 +120,23 @@
           </div>
 
           <!-- File Details -->
-          <div class="flex flex-col self-start ml-4 col-start-2 col-span-3 gap-2">
+          <div class="flex flex-col self-start ml-4 landscape:col-start-2 landscape:col-span-3 gap-2">
             <p class="text-sm font-semibold">{{ file.name }}</p>
             <p class="text-xs text-gray-500">{{ file.path }}</p>
             <div>
               <UHorizontalNavigation
                 :links="[
+                  {
+                    label: 'Rank',
+                    icon: 'fluent:crown-20-filled',
+                    badge: {
+                      label: (file.confidenceScore * 100).toFixed(1) + '%',
+                      color: 'amber',
+                      variant: 'soft',
+                    },
+                    active: getTagOptCache(file.name) === OptCategories.RANK,
+                    click: () => setMenuOptCache(file.name, OptCategories.RANK) 
+                  },
                   { 
                     label: 'Applied Tags', 
                     icon: 'fluent:tag-multiple-16-filled', 
@@ -134,8 +145,8 @@
                       color: 'emerald',
                       variant: 'soft'
                     },
-                    active: !tagOptCache[file.name], 
-                    click: () => setTagOptCache(file.name, false) 
+                    active: getTagOptCache(file.name) === OptCategories.ASSIGNED,
+                    click: () => setMenuOptCache(file.name, OptCategories.ASSIGNED) 
                   },
                   { 
                     label: 'Excluded Tags', 
@@ -145,8 +156,8 @@
                       color: 'rose',
                       variant: 'soft'
                     },
-                    active: tagOptCache[file.name], 
-                    click: () => setTagOptCache(file.name, true) 
+                    active: getTagOptCache(file.name) === OptCategories.EXCLUDED,
+                    click: () => setMenuOptCache(file.name, OptCategories.EXCLUDED) 
                   },
                   {
                     label: 'Scan',
@@ -162,7 +173,22 @@
                   }
                 ]"
               />
-              <div v-show="!tagOptCache[file.name]" class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4">
+              <div v-show="getTagOptCache(file.name) === OptCategories.RANK" class="ml-4 flex flex-col gap-2 m-4">
+                <ATag
+                  v-for="score, tag in file.confidenceKeys"
+                  :key="tag"
+                  :label="`${tag} (${(score * 100).toFixed(1)}%)`"
+                  :exists="true"
+                  :simple="true"
+                />
+
+                <div
+                  v-if="!file.tags.length && !file?.confidenceKeys?.length"
+                >
+                  <p class="text-zinc-50/25">None</p>
+                </div>
+              </div>
+              <div v-show="getTagOptCache(file.name) === OptCategories.ASSIGNED" class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4">
                 <ATag
                   v-for="tag in file.highConfidenceTags.length
                     ? file.highConfidenceTags
@@ -181,7 +207,7 @@
                 </div>
               </div>
               <div
-                v-show="tagOptCache[file.name]"
+                v-show="getTagOptCache(file.name) === OptCategories.EXCLUDED"
                 class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4"
               >
                 <ATag
@@ -367,10 +393,16 @@ const { makeSquare } = useMakeSquare();
 const mediaRef = useTemplateRef("media-list");
 
 const mode = ref<"view" | "tag">("view");
-const tagOptCache = ref<Record<string, boolean>>({});
-const setTagOptCache = (tag: string, value: boolean) => {
+enum OptCategories {
+  RANK = "rank",
+  ASSIGNED = "assigned",
+  EXCLUDED = "excluded",
+}
+const tagOptCache = ref<Record<string, OptCategories>>({});
+const setMenuOptCache = (tag: string, value: OptCategories) => {
   tagOptCache.value[tag] = value;
 };
+const getTagOptCache = (tag: string) => tagOptCache.value[tag] || OptCategories.ASSIGNED;
 
 const cropTarget = ref<ImageFile | null>(null);
 const closeCropModal = () => {

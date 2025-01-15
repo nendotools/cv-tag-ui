@@ -21,5 +21,7 @@ declare global {
     tags: string[];
     highConfidenceTags: string[];
     lowConfidenceTags: string[];
+    confidenceScore: number;
+    confidenceKeys: Record<string, number>;
   }
 }

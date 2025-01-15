@@ -67,6 +67,8 @@ const prepareFile = (dir: string, fileName: string): { image: ImageFile, error?:
     highConfidenceTags: [],
     lowConfidenceTags: [],
     tags: [],
+    confidenceScore: 0,
+    confidenceKeys: {},
   };
 
   if (fs.existsSync(`${dir}/${name}.txt`)) {
@@ -78,6 +80,20 @@ const prepareFile = (dir: string, fileName: string): { image: ImageFile, error?:
     const json = JSON.parse(fs.readFileSync(`${dir}/${name}.json`, "utf-8"));
     image.highConfidenceTags = Object.keys(json.high_tags);
     image.lowConfidenceTags = Object.keys(json.low_tags);
+    // combine and sort tags, high confidence tags first, select the top 5 as ConfidenceKeys and calculate the confidence score
+    const allTags: Record<string, number> = { ...json.high_tags, ...json.low_tags };
+    const sortedTags = Object.entries(allTags).sort((a, b) => b[1] - a[1]);
+    const confidenceKeys: Record<string, number> = {};
+    let confidenceScore = 0;
+    for (const [tag, score] of sortedTags) {
+      if (Object.keys(confidenceKeys).length < 5) {
+        confidenceKeys[tag] = score;
+        confidenceScore += score;
+      }
+    }
+    confidenceScore /= Object.keys(confidenceKeys).length;
+    image.confidenceKeys = confidenceKeys;
+    image.confidenceScore = confidenceScore;
   }
 
   return { image }
