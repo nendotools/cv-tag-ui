@@ -31,6 +31,29 @@
         </UButton>
       </div>
     </template>
+
+    <template #subheader>
+      <UTabs :defaultIndex="1" :items="[{
+        label: 'Rank',
+        icon: 'fluent:crown-20-filled',
+        active: fileStore.sort === 'rank',
+        click: () => console.log('Rank')
+        },{
+        label: 'Name',
+        icon: 'fluent:text-20-filled',
+        active: fileStore.sort === 'name',
+        },{
+        label: 'Unscanned',
+        icon: 'fluent:tag-search-20-regular',
+        active: fileStore.sort === 'unscanned',
+      }]">
+        <template #default="{ item, selected }">
+          <span v-if="selected" class="capitalize">
+          {{ fileStore.sort = item.label.toLowerCase() }}
+          </span>
+        </template>
+      </UTabs>
+    </template>
   </AHeader>
 
   <div class="grid grid-cols-1 gap-4 pt-16">

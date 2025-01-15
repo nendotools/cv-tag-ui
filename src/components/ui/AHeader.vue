@@ -14,4 +14,7 @@
       <slot name="right" />
     </div>
   </div>
+  <div class="w-full flex flex-row justify-center fixed top-16">
+    <slot name="subheader" />
+  </div>
 </template>

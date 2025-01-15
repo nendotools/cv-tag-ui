@@ -3,6 +3,8 @@ import { useLoaders, Prefixes } from "./loaders";
 import { useRecall } from "./recall";
 const worker = new Worker(new URL("../assets/workers/file.worker.ts", import.meta.url), { type: "module" });
 
+const Sorts = ["rank", "name", "unscanned"] as const;
+
 interface State {
   directory: string;
   files: ImageFile[];
@@ -14,6 +16,8 @@ interface State {
   filters: Record<string, AndFilter | OrFilter>;
   appliedFilters: Set<string>;
   filterPreview: Set<string>;
+
+  sort: typeof Sorts[number];
 
   threshold: number;
 }
@@ -30,6 +34,7 @@ export const useFiles = defineStore("files", {
     filters: {},
     appliedFilters: new Set<string>(),
     filterPreview: new Set<string>(),
+    sort: "name",
     threshold: 0.35,
   }),
 
@@ -69,9 +74,23 @@ export const useFiles = defineStore("files", {
       return tags;
     },
     visibleFiles(state: State) {
-      if (state.filterPreview.size) {
+      let sortedFiles = state.files.sort((a, b) => {
+        if (state.sort === "rank") {
+          return b.confidenceScore - a.confidenceScore;
+        }
+        if (state.sort === "name") {
+          return a.name.localeCompare(b.name);
+        }
+        return 0;
+      });
+      if (state.sort === "unscanned") {
+        sortedFiles.filter((f) => f.confidenceScore === 0);
+      }
+
+      console.log("Filtering files", state.sort);
+      if (state.filterPreview.size || state.sort === "unscanned") {
         const previewTags = Array.from(state.filterPreview);
-        const f = state.files.filter((f) =>
+        const f = sortedFiles.filter((f) =>
           previewTags.some((tag) => f.highConfidenceTags.includes(tag)),
         );
         return f.slice((state.page - 1) * state.pageSize, state.page * state.pageSize);
@@ -88,7 +107,7 @@ export const useFiles = defineStore("files", {
           orGroups.push(state.filters[filter].tags);
         }
       }
-      const filtered = state.files.filter((f) => {
+      const filtered = sortedFiles.filter((f) => {
         for (const tag of allAnds) {
           if (!f.tags.includes(tag)) {
             return false;
