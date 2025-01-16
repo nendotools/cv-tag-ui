@@ -226,8 +226,10 @@ const queryTags = async (q:string) => {
       const aRank = fileStore.aggregateTags[a] || 0;
       const bRank = fileStore.aggregateTags[b] || 0;
       if (aRank !== bRank) return bRank - aRank;
-      if(a.length !== b.length) return a.length - b.length;
-      return a.localeCompare(b);
+      if (a.startsWith(q) && !b.startsWith(q)) return -1;
+      if (b.startsWith(q) && !a.startsWith(q)) return 1;
+      if (a.length === b.length) return a.localeCompare(b);
+      return a.length - b.length;
     })
     .slice(0, 20)])];
 };
