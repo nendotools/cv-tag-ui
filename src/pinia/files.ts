@@ -87,7 +87,6 @@ export const useFiles = defineStore("files", {
         sortedFiles.filter((f) => f.confidenceScore === 0);
       }
 
-      console.log("Filtering files", state.sort);
       if (state.filterPreview.size || state.sort === "unscanned") {
         const previewTags = Array.from(state.filterPreview);
         const f = sortedFiles.filter((f) =>

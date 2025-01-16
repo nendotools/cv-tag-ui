@@ -59,7 +59,7 @@
           <UInputMenu class="flex-1" placeholder="Search tags" v-model="tagSearch" :search="queryTags">
             <template #option="{ option }">
               <div class="flex flex-row justify-between gap-2">
-                <span class="text-primary">[{{ fileStore.aggregateTags[option] || rawTags.includes(option) ? 0 : 'new' }}]</span>
+                <span class="text-primary">[{{ aggregateTags[option] || (rawTags.includes(option) ? 0 : 'new') }}]</span>
                 <span>{{ option }}</span>
               </div>
             </template>
@@ -164,6 +164,7 @@ const directoryStore = useDirectory();
 const { kohyaSettings } = storeToRefs(directoryStore);
 const fileStore = useFiles();
 const tagStore = useTags();
+const { aggregateTags } = storeToRefs(fileStore);
 const {
   rawTags,
   generalTags,
