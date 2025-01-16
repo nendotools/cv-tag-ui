@@ -91,7 +91,7 @@ export const useFiles = defineStore("files", {
       if (state.filterPreview.size || state.sort === "unscanned") {
         const previewTags = Array.from(state.filterPreview);
         const f = sortedFiles.filter((f) =>
-          previewTags.some((tag) => f.highConfidenceTags.includes(tag)),
+          !previewTags.length ? true : previewTags.some((tag) => f.highConfidenceTags.includes(tag)),
         );
         return f.slice((state.page - 1) * state.pageSize, state.page * state.pageSize);
       }
