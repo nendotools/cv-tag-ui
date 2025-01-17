@@ -1,6 +1,6 @@
 <template>
-  <USlideover>
-    <div class="h-full w-full menu">
+  <USlideover v-model="isOpen">
+    <div class="h-full menu">
       <UHorizontalNavigation
         :links="links"
         class="row-span-1 col-span-1 border-b border-gray-200 dark:border-gray-800"
@@ -19,7 +19,7 @@
         </div>
         <h2 class="text-lg p-2">Clean-up</h2>
         <div class="flex flex-col gap-2 pl-4">
-          <div class="text-2xs text-slate-300/60">
+          <div class="text-2xs text-slate-300/60 break-all">
             path: {{ directoryStore.workingDirectory }}
           </div>
           <div class="flex flex-col text-sm text-gray-500 dark:text-gray-400">
@@ -178,7 +178,7 @@ const {
   categoryColors,
 } = storeToRefs(tagStore);
 
-const emits = defineEmits(["filter"]);
+const emits = defineEmits(["filter","close"]);
 onMounted(() => {
   threshold.value = fileStore.threshold*100;
   removedFiles.value = null;
@@ -299,8 +299,18 @@ const addFilterTag = (_: KeyboardEvent) => {
   search.value = "";
 };
 
+const isOpen = ref<boolean>(false);
+const close = () => {
+  isOpen.value = false;
+  emits("close");
+};
 const mode = ref<"settings" | "tags" | "store" | "browse">("settings");
 const links = computed(() => [
+  {
+    label: "",
+    icon: "fluent:chevron-right-20-filled",
+    click: close,
+  },
   {
     label: "Settings",
     click: () => (mode.value = "settings"),

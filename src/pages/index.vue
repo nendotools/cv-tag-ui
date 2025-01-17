@@ -22,7 +22,7 @@
     </div>
 
     <template #right>
-      <div class="flex flex-row gap-4">
+      <div class="flex flex-row gap-4 portrait:hidden">
         <UButton size="xs" variant="outline" @click="openDirectoryModal">
           Change Directory
         </UButton>
@@ -30,6 +30,9 @@
           Options 
         </UButton>
       </div>
+      <UDropdown class="landscape:hidden" :items="collapsedHeaderMenu" :popper="{ placement: 'bottom-start' }">
+        <UButton color="white" icon="fluent:more-horizontal-20-regular" />
+      </UDropdown>
     </template>
 
     <template #subheader>
@@ -153,7 +156,7 @@
                     label: 'Rank',
                     icon: 'fluent:crown-20-filled',
                     badge: {
-                      label: (file.confidenceScore * 100).toFixed(1) + '%',
+                      label: ((file?.confidenceScore || 0) * 100).toFixed(1) + '%',
                       color: 'amber',
                       variant: 'soft',
                     },
@@ -430,7 +433,6 @@ const getTagOptCache = (tag: string) => tagOptCache.value[tag] || OptCategories.
 const cropTarget = ref<ImageFile | null>(null);
 const closeCropModal = () => {
   cropTarget.value = null;
-  console.log("closed");
 };
 
 const modal = useModal();
@@ -448,6 +450,9 @@ const openTagPanel = () => {
   slideover.open(OptionsSlideover, {
     onFilter: () => {
       setPage();
+    },
+    onClose: () => {
+      slideover.close(); 
     },
   });
 };
@@ -546,6 +551,17 @@ const animateRotation = () => {
   rotation.value = (rotation.value + 5) % 360;
   if (showActivity.value) requestAnimationFrame(animateRotation);
 };
+
+const collapsedHeaderMenu = ref<any[]>([[{
+  label: "Change Directory",
+  icon: "fluent:folder-open-20-regular",
+  click: openDirectoryModal,
+    },
+  {
+    label: "Options",
+    icon: "fluent:options-20-regular",
+    click: openTagPanel,
+  }]]);
 </script>
 
 <style scoped>

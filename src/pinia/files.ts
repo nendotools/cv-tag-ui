@@ -268,7 +268,7 @@ export const useFiles = defineStore("files", {
         headers: {
           "Content-Type": "application/json",
         },
-        body: { path: file.path, add: [tags], remove: [] },
+        body: { path: file.path, add: tags, remove: [] },
       });
     },
 
@@ -300,7 +300,7 @@ export const useFiles = defineStore("files", {
         headers: {
           "Content-Type": "application/json",
         },
-        body: { path: file.path, add: [], remove: [tags] },
+        body: { path: file.path, add: [], remove: tags },
       });
     },
 
