@@ -1,0 +1,8 @@
+numpy 
+opencv-python
+pandas==2.2.3
+huggingface-hub==0.22.2
+Pillow==11.0.0
+deepdanbooru==1.0.2
+onnxruntime-gpu
+Flask==3.1

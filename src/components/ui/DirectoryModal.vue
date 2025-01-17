@@ -174,13 +174,11 @@ const cancelCreate = () => {
   isKohya.value = false;
 };
 const saveCreate = async () => {
-  if (isKohya.value && isValidTarget.value) {
     await directoryStore.createDirectory(newDirname.value);
     showCreate.value = false;
     kohyaTarget.value = "";
     newDirname.value = "";
     isKohya.value = false;
-  }
 };
 const validateName = (e: Event) => {
   const target = e.target as HTMLInputElement;
