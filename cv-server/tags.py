@@ -14,9 +14,9 @@ class Tagger:
             return
 
         self.tags = []
-        tag_data = pd.read_csv(tag_path, header=0).values
+        self.tags = pd.read_csv(tag_path, sep=",", header=0, index_col=0)
         # tag format: [tag, description, type_id, count]
-        for tag in tag_data:
+        for tag in self.tags:
             if tag[2] == 9:
                 self.rating_tags.append(tag[1])
             if tag[2] == 4:
@@ -29,12 +29,13 @@ class Tagger:
         )
         return {"character": self.character_tags, "general": self.general_tags, "rating": self.rating_tags}
 
-    def list_tags(self) -> list[str]:
+    # should return a list of {name: str, category: int} objects
+    def list_tags(self) -> list[dict]:
         tags = []
         for tag in self.character_tags:
-            tags.append(tag)
+            tags.append({"name": tag, "category": 4})
         for tag in self.general_tags:
-            tags.append(tag)
+            tags.append({"name": tag, "category": 0})
         for tag in self.rating_tags:
-            tags.append(tag)
+            tags.append({"name": tag, "category": 9})
         return tags

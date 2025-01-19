@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from utils import dedupe_files
+from utils import dedupe_files, save_csv, save_json
 from interrogator import Interrogator
 from flask import Flask, request, jsonify
 
@@ -40,15 +40,22 @@ def process_file_endpoint():
     defaults = {
         "threshold": 0.35,
         "character_threshold": 0.95,
+        "save_result": True,
     }
     args = argparse.Namespace(**{**defaults, **data})
-    if args.path is None:
-        return jsonify({"status": "error", "message": "path not provided"}), 400
+    if args.file is None:
+        return jsonify({"status": "error", "message": "file path not provided"}), 400
     output_json = interrogator.process_file(
-        image_path=args.path,
+        image_path=args.file,
         threshold=args.threshold,
         character_threshold=args.character_threshold,
     )
+    if args.save_result:
+        file_dir = Path(args.file).parent
+        file_basename = Path(args.file).stem
+        save_json(output_json, f"{file_dir}/{file_basename}.json")
+        save_csv(list(output_json["high"].keys()), f"{file_dir}/{file_basename}.txt")
+
     return jsonify(output_json), 200
 
 

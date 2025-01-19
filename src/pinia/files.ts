@@ -335,7 +335,7 @@ export const useFiles = defineStore("files", {
 
       loaders.start(`${Prefixes.ANALYZE}${file.name}`);
       console.log(`Analyzing image: ${file.path}`);
-      const json = await $fetch<{ high_tags: Record<string, number>, low_tags: Record<string, number> }>("/inferrence/process_file", {
+      const json = await $fetch<{ high: Record<string, number>, low: Record<string, number> }>("/inferrence/process_file", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -344,7 +344,7 @@ export const useFiles = defineStore("files", {
       }).catch(async (_) => {
         // retry once after a delay
         await new Promise((resolve) => setTimeout(resolve, 250));
-        return await $fetch<{ high_tags: Record<string, number>, low_tags: Record<string, number> }>("/inferrence/process_file", {
+        return await $fetch<{ high: Record<string, number>, low: Record<string, number> }>("/inferrence/process_file", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -353,16 +353,17 @@ export const useFiles = defineStore("files", {
         });
       });
 
-      const combinedTags: Record<string, number> = { ...json.high_tags, ...json.low_tags };
-      file.highConfidenceTags = Object.keys(json.high_tags);
-      file.lowConfidenceTags = Object.keys(json.low_tags);
+      const combinedTags: Record<string, number> = { ...json.high, ...json.low };
+      file.highConfidenceTags = Object.keys(json.high);
+      file.lowConfidenceTags = Object.keys(json.low);
       file.tags = [...file.highConfidenceTags];
       file.confidenceScore = 0;
       file.confidenceKeys = {};
-      for (const tag in combinedTags) {
+      const sortedTags = Object.entries(combinedTags).sort((a, b) => b[1] - a[1]);
+      for (const [tag, score] of sortedTags) {
         if (Object.keys(file.confidenceKeys).length < 5) {
-          file.confidenceKeys[tag] = combinedTags[tag];
-          file.confidenceScore += combinedTags[tag];
+          file.confidenceKeys[tag] = score;
+          file.confidenceScore += score;
         }
       }
       file.confidenceScore /= Object.keys(file.confidenceKeys).length;
