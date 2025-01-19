@@ -378,13 +378,25 @@ export const useFiles = defineStore("files", {
     async analyzeDirectory() {
       const loaders = useLoaders();
       console.log("Analyzing all images");
+      const queue = [];
       // visually queue all files for analysis
       for (const file of this.files) {
+        queue.push(file.name);
         loaders.enqueue(`${Prefixes.ANALYZE}${file.name}`);
       }
       for (const file of this.files) {
+        // remove from queue
+        queue.splice(queue.indexOf(file.name), 1);
+        loaders.dequeue(`${Prefixes.ANALYZE}${file.name}`);
+        const start = performance.now();
         await this.analyzeImage(file);
+        const end = performance.now();
+        if (end - start < 500) {
+          await new Promise((resolve) => setTimeout(resolve, Math.max(0, 500 - (end - start))));
+        }
       }
+      console.log("Finished analyzing all images");
+      console.log("Queue", queue);
     },
 
     async uploadFiles(files: FileList) {

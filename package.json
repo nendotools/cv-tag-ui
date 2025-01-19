@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "setup": "./scripts/setup-python.sh",
     "build": "nuxt build",
-    "dev": "nuxt dev",
+    "dev": "./scripts/run-dev.sh",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
