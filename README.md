@@ -39,6 +39,13 @@ yarn dev --host
 
 ## Feature Roadmap
 
+- General
+  - [ ] Better mobile support
+  - [ ] Handle multiple connected clients (prevent stacking tagging requests)
+  - [ ] Image grid layout
+  - [x] Image sorting
+  - [ ] Image filtering
+  - [ ] Recent Project menu
 - Images
   - [x] Image upload
   - [x] Image cropping
@@ -52,11 +59,12 @@ yarn dev --host
     - [x] Fixed aspect ratios {1:1, 16:9, 9:16}
     - [x] Letter-boxing {1:1}
     - [ ] Letter-boxing {16:9, 9:16}
+    - [ ] remove background
 - Tagging
   - [x] Image auto-tagging
   - [ ] Individual Image tagging
   - [x] Bulk tagging (add/remove)
-  - [ ] Model Selection
+  - [ ] Recognition Model selection
   - [x] Model Tag automation
 - Directories
   - [x] Image directory creation
