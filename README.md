@@ -1,7 +1,5 @@
 # Computer Vision Tagging Utility
 
----
-
 This project provides a web-interface for managing and tagging images for
 T2I/T2V training. The interface allows for easy creation of directories,
 uploading of images, cropping, letter-boxing, and tagging of images.
