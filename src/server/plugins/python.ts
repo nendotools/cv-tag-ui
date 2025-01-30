@@ -2,9 +2,9 @@ import { spawn } from "child_process";
 
 export default defineNitroPlugin((nitro) => {
   nitro.hooks.hook("request", () => {
-    console.log('starting python server from request hook');
+    console.log("starting python server from request hook");
     // tie a python server to the app object
-    let { app } = nitro as (typeof nitro & { app: { py: any } });
+    let { app } = nitro as typeof nitro & { app: { py: any } };
     if (!app) {
       app = { py: null };
       // force the app object to be global and force typescript to accept it
@@ -14,7 +14,7 @@ export default defineNitroPlugin((nitro) => {
     if (app.py) {
       return;
     }
-    const pythonUtilPath = process.env.PYTHON_UTIL_PATH;
+    const pythonUtilPath = process.env.PYTHON_UTIL_PATH ?? "cv-server";
     const cmdArr = [`${pythonUtilPath}/app.py`];
     app.py = spawn(`python`, cmdArr);
 
@@ -32,7 +32,7 @@ export default defineNitroPlugin((nitro) => {
   });
 
   nitro.hooks.hook("close", () => {
-    let { app } = nitro as (typeof nitro & { app: { py: any } });
+    let { app } = nitro as typeof nitro & { app: { py: any } };
     if (app && app?.py) {
       app.py.kill();
     }
