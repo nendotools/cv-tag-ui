@@ -22,7 +22,11 @@ export default defineEventHandler(async (event: H3Event) => {
   const dFiles = fs.readdirSync(path, { withFileTypes: true });
   for (const file of dFiles) {
     // skip files with wronge extensions
-    if (!Extensions.includes((file.name.split(".").pop() || "") as typeof Extensions[number])) {
+    if (
+      !Extensions.includes(
+        (file.name.split(".").pop() || "") as (typeof Extensions)[number],
+      )
+    ) {
       continue;
     }
 
@@ -39,31 +43,54 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 });
 
-const prepareFile = (dir: string, fileName: string): { image: ImageFile, error?: null } | { image?: null, error: string } => {
+const prepareFile = (
+  dir: string,
+  fileName: string,
+): { image: ImageFile; error?: null } | { image?: null; error: string } => {
+  const path = `${dir}/${fileName}`;
   // load the file
-  if (!fs.existsSync(`${dir}/${fileName}`)) {
-    return { error: "File not found" }
+  if (!fs.existsSync(path)) {
+    return { error: "File not found" };
   }
 
-  const type = fileName.split(".").pop();
+  const type = fileName.split(".").pop()?.toLowerCase();
   if (!type || !["jpg", "jpeg", "png", "bmp"].includes(type)) {
-    return { error: "Invalid file type" }
+    return { error: "Invalid file type" };
   }
+
+  let checkpoint = "dims";
   // get the dimensions
-  const dims = imageSize(`${dir}/${fileName}`);
+  imageSize(path, (err, _) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+  });
+  const dims = { width: 0, height: 0, type: "ERROR" };
+  try {
+    const { width, height, type } = imageSize(path);
+    dims.width = width || 0;
+    dims.height = height || 0;
+    dims.type = type || "ERROR";
+  } catch (e) {
+    console.log(e);
+  }
 
   // create hash ID from file data
-  const file = fs.readFileSync(`${dir}/${fileName}`);
+  checkpoint = "hash";
+  const file = fs.readFileSync(path);
   const hash = createHash("sha256").update(file).digest("hex");
   const name = fileName.replace(/\.(jpg|jpeg|png|bmp)$/i, "");
 
+  checkpoint = "build image";
   const image: ImageFile = {
     hash,
     name,
-    path: `${dir}/${fileName}`,
+    path,
     resource: `/resource${dir}/${fileName}`,
     dimensions: { width: dims.width || 0, height: dims.height || 0 },
-    mimeType: dims.type ?? MIME_TYPES[type.toUpperCase() as keyof typeof MIME_TYPES],
+    mimeType:
+      dims.type ?? MIME_TYPES[type.toUpperCase() as keyof typeof MIME_TYPES],
     highConfidenceTags: [],
     lowConfidenceTags: [],
     tags: [],
@@ -71,13 +98,20 @@ const prepareFile = (dir: string, fileName: string): { image: ImageFile, error?:
     confidenceKeys: {},
   };
 
+  checkpoint = "tags";
   if (fs.existsSync(`${dir}/${name}.txt`)) {
-    const tags = fs.readFileSync(`${dir}/${name}.txt`, "utf-8").split(",").map((tag) => tag.trim()).filter((tag) => tag !== "");
+    const tags = fs
+      .readFileSync(`${dir}/${name}.txt`, "utf-8")
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag !== "");
     image.tags = tags;
   }
 
+  checkpoint = "confidence";
   if (fs.existsSync(`${dir}/${name}.json`)) {
     const json = JSON.parse(fs.readFileSync(`${dir}/${name}.json`, "utf-8"));
+    console.log(name, json);
     image.highConfidenceTags = Object.keys(json.high);
     image.lowConfidenceTags = Object.keys(json.low);
     // combine and sort tags, high confidence tags first, select the top 5 as ConfidenceKeys and calculate the confidence score
@@ -95,6 +129,5 @@ const prepareFile = (dir: string, fileName: string): { image: ImageFile, error?:
     image.confidenceKeys = confidenceKeys;
     image.confidenceScore = confidenceScore;
   }
-
-  return { image }
-}
+  return { image };
+};

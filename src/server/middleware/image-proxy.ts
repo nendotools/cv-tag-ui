@@ -6,7 +6,7 @@ export default defineEventHandler((event: H3Event) => {
     // handle the request by validating the target file exists, is a file, and is an image, then return the file
     const path = decodeURIComponent(
       event.node.req.url.replace("/resource", ""),
-    );
+    ).replace(/\?.*$/, "");
     const isValid =
       fs.existsSync(path) &&
       fs.statSync(path).isFile() &&

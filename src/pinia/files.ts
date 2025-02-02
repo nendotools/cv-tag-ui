@@ -1,7 +1,10 @@
 import { defineStore } from "pinia";
 import { useLoaders, Prefixes } from "./loaders";
 import { useRecall } from "./recall";
-const worker = new Worker(new URL("../assets/workers/file.worker.ts", import.meta.url), { type: "module" });
+const worker = new Worker(
+  new URL("../assets/workers/file.worker.ts", import.meta.url),
+  { type: "module" },
+);
 
 const Sorts = ["rank", "name", "unscanned"] as const;
 
@@ -17,7 +20,7 @@ interface State {
   appliedFilters: Set<string>;
   filterPreview: Set<string>;
 
-  sort: typeof Sorts[number];
+  sort: (typeof Sorts)[number];
 
   threshold: number;
 }
@@ -42,7 +45,9 @@ export const useFiles = defineStore("files", {
     knownTags(state: State) {
       return Array.from(
         state.files.reduce((acc: Set<string>, file: ImageFile) => {
-          const tags = file.tags.map((t) => t.replaceAll("\\", "").replaceAll("_", " "));
+          const tags = file.tags.map((t) =>
+            t.replaceAll("\\", "").replaceAll("_", " "),
+          );
           return new Set([...acc, ...tags]);
         }, new Set()),
       );
@@ -50,7 +55,10 @@ export const useFiles = defineStore("files", {
     aggregateTags: (state) => {
       const tags: Record<string, number> = {};
       for (const file of state.files) {
-        for (const tag of [...file.highConfidenceTags, ...file.lowConfidenceTags]) {
+        for (const tag of [
+          ...file.highConfidenceTags,
+          ...file.lowConfidenceTags,
+        ]) {
           if (tags[tag]) {
             tags[tag]++;
           } else {
@@ -90,9 +98,14 @@ export const useFiles = defineStore("files", {
       if (state.filterPreview.size || state.sort === "unscanned") {
         const previewTags = Array.from(state.filterPreview);
         const f = sortedFiles.filter((f) =>
-          !previewTags.length ? true : previewTags.some((tag) => f.highConfidenceTags.includes(tag)),
+          !previewTags.length
+            ? true
+            : previewTags.some((tag) => f.highConfidenceTags.includes(tag)),
         );
-        return f.slice((state.page - 1) * state.pageSize, state.page * state.pageSize);
+        return f.slice(
+          (state.page - 1) * state.pageSize,
+          state.page * state.pageSize,
+        );
       }
       // if the filter is an "and" filter, all tags must be present
       // if the filter is an "or" filter, at least one tag must be present
@@ -120,7 +133,10 @@ export const useFiles = defineStore("files", {
 
         return true;
       });
-      return filtered.slice((state.page - 1) * state.pageSize, state.page * state.pageSize);
+      return filtered.slice(
+        (state.page - 1) * state.pageSize,
+        state.page * state.pageSize,
+      );
     },
     pages(state: State) {
       if (state.filterPreview.size) {
@@ -159,7 +175,10 @@ export const useFiles = defineStore("files", {
     },
     hasNonSquareFiles(state: State) {
       return state.files.some(
-        (f) => f.dimensions.width !== f.dimensions.height,
+        (f) =>
+          f.dimensions.width !== f.dimensions.height &&
+          (f.dimensions.width / f.dimensions.height).toFixed(2) !== "1.33" &&
+          (f.dimensions.width / f.dimensions.height).toFixed(2) !== "0.75",
       );
     },
   },
@@ -197,7 +216,10 @@ export const useFiles = defineStore("files", {
       this.setPage();
     },
     async setPage(page: number = 1) {
-      this.page = Math.max(1, Math.min(page, Math.ceil(this.files.length / this.pageSize)));
+      this.page = Math.max(
+        1,
+        Math.min(page, Math.ceil(this.files.length / this.pageSize)),
+      );
     },
     async fetchDirectories(path: string) {
       const directories = await $fetch<{
@@ -233,7 +255,7 @@ export const useFiles = defineStore("files", {
       if (success) {
         this.files.push(...data);
       } else {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching data:", error);
       }
     },
 
@@ -246,6 +268,9 @@ export const useFiles = defineStore("files", {
         method: "PUT",
         body: formData,
       });
+
+      const fileIndex = this.files.findIndex((f) => f.path === file.path);
+      this.files[fileIndex].resource = `${file.resource}?cb=${Date.now()}`;
       return response;
     },
 
@@ -275,7 +300,9 @@ export const useFiles = defineStore("files", {
     // bulk tag addition for all active files
     async bulkAddTag(tags: string[]) {
       for (const file of this.files) {
-        const applicableTags = tags.filter((t) => !file.highConfidenceTags.includes(t));
+        const applicableTags = tags.filter(
+          (t) => !file.highConfidenceTags.includes(t),
+        );
         if (applicableTags.length > 0) {
           this.addTag(file, applicableTags);
         }
@@ -307,7 +334,9 @@ export const useFiles = defineStore("files", {
     // bulk tag removal for all active files
     async bulkRemoveTag(tags: string[]) {
       for (const file of this.files) {
-        const applicableTags = tags.filter((t) => file.highConfidenceTags.includes(t));
+        const applicableTags = tags.filter((t) =>
+          file.highConfidenceTags.includes(t),
+        );
         if (applicableTags.length > 0) {
           this.removeTag(file, applicableTags);
         }
@@ -335,7 +364,10 @@ export const useFiles = defineStore("files", {
 
       loaders.start(`${Prefixes.ANALYZE}${file.name}`);
       console.log(`Analyzing image: ${file.path}`);
-      const json = await $fetch<{ high: Record<string, number>, low: Record<string, number> }>("/inferrence/process_file", {
+      const json = await $fetch<{
+        high: Record<string, number>;
+        low: Record<string, number>;
+      }>("/inferrence/process_file", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -344,7 +376,10 @@ export const useFiles = defineStore("files", {
       }).catch(async (_) => {
         // retry once after a delay
         await new Promise((resolve) => setTimeout(resolve, 250));
-        return await $fetch<{ high: Record<string, number>, low: Record<string, number> }>("/inferrence/process_file", {
+        return await $fetch<{
+          high: Record<string, number>;
+          low: Record<string, number>;
+        }>("/inferrence/process_file", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -353,13 +388,18 @@ export const useFiles = defineStore("files", {
         });
       });
 
-      const combinedTags: Record<string, number> = { ...json.high, ...json.low };
+      const combinedTags: Record<string, number> = {
+        ...json.high,
+        ...json.low,
+      };
       file.highConfidenceTags = Object.keys(json.high);
       file.lowConfidenceTags = Object.keys(json.low);
       file.tags = [...file.highConfidenceTags];
       file.confidenceScore = 0;
       file.confidenceKeys = {};
-      const sortedTags = Object.entries(combinedTags).sort((a, b) => b[1] - a[1]);
+      const sortedTags = Object.entries(combinedTags).sort(
+        (a, b) => b[1] - a[1],
+      );
       for (const [tag, score] of sortedTags) {
         if (Object.keys(file.confidenceKeys).length < 5) {
           file.confidenceKeys[tag] = score;
@@ -367,7 +407,6 @@ export const useFiles = defineStore("files", {
         }
       }
       file.confidenceScore /= Object.keys(file.confidenceKeys).length;
-
 
       const fileIndex = this.files.findIndex((f) => f.path === file.path);
       if (fileIndex !== -1) {
@@ -393,7 +432,9 @@ export const useFiles = defineStore("files", {
         await this.analyzeImage(file);
         const end = performance.now();
         if (end - start < 500) {
-          await new Promise((resolve) => setTimeout(resolve, Math.max(0, 500 - (end - start))));
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.max(0, 500 - (end - start))),
+          );
         }
       }
       console.log("Finished analyzing all images");
@@ -420,7 +461,11 @@ export const useFiles = defineStore("files", {
       }
     },
 
-    async moveFiles(file: ImageFile, target: string, preserve: boolean = false) {
+    async moveFiles(
+      file: ImageFile,
+      target: string,
+      preserve: boolean = false,
+    ) {
       await $fetch<{ path: string; isValid: boolean; error?: string }>(
         `/api/files/move`,
         {
@@ -429,7 +474,8 @@ export const useFiles = defineStore("files", {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ path: file.path, target, preserve }),
-        });
+        },
+      );
       if (!preserve) {
         this.files = this.files.filter((f) => f.path !== file.path);
       }

@@ -26,33 +26,49 @@
         <UButton size="xs" variant="outline" @click="openDirectoryModal">
           Change Directory
         </UButton>
-        <UButton size="xs" variant="solid" icon="fluent:options-20-regular" @click="openTagPanel">
-          Options 
+        <UButton
+          size="xs"
+          variant="solid"
+          icon="fluent:options-20-regular"
+          @click="openTagPanel"
+        >
+          Options
         </UButton>
       </div>
-      <UDropdown class="landscape:hidden" :items="collapsedHeaderMenu" :popper="{ placement: 'bottom-start' }">
+      <UDropdown
+        class="landscape:hidden"
+        :items="collapsedHeaderMenu"
+        :popper="{ placement: 'bottom-start' }"
+      >
         <UButton color="white" icon="fluent:more-horizontal-20-regular" />
       </UDropdown>
     </template>
 
     <template #subheader>
-      <UTabs :defaultIndex="1" :items="[{
-        label: 'Rank',
-        icon: 'fluent:crown-20-filled',
-        active: fileStore.sort === 'rank',
-        click: () => console.log('Rank')
-        },{
-        label: 'Name',
-        icon: 'fluent:text-20-filled',
-        active: fileStore.sort === 'name',
-        },{
-        label: 'Unscanned',
-        icon: 'fluent:tag-search-20-regular',
-        active: fileStore.sort === 'unscanned',
-      }]">
+      <UTabs
+        :defaultIndex="1"
+        :items="[
+          {
+            label: 'Rank',
+            icon: 'fluent:crown-20-filled',
+            active: fileStore.sort === 'rank',
+            click: () => console.log('Rank'),
+          },
+          {
+            label: 'Name',
+            icon: 'fluent:text-20-filled',
+            active: fileStore.sort === 'name',
+          },
+          {
+            label: 'Unscanned',
+            icon: 'fluent:tag-search-20-regular',
+            active: fileStore.sort === 'unscanned',
+          },
+        ]"
+      >
         <template #default="{ item, selected }">
           <span v-if="selected" class="capitalize">
-          {{ fileStore.sort = item.label.toLowerCase() }}
+            {{ fileStore.sort = item.label.toLowerCase() }}
           </span>
         </template>
       </UTabs>
@@ -65,7 +81,9 @@
       class="h-dvh flex flex-col justify-start items-stretch p-8 gap-4 overflow-y-auto pb-48"
     >
       <UCard v-for="file in visibleFiles" :key="file.name">
-        <div class="grid items-center landscape:grid-cols-5 portrait:grid-cols-1 grid-rows-auto">
+        <div
+          class="grid items-center landscape:grid-cols-5 portrait:grid-cols-1 grid-rows-auto"
+        >
           <!-- Image and Image tools -->
           <div
             class="relative flex flex-col items-center justify-center overflow-hidden col-span-1"
@@ -146,7 +164,9 @@
           </div>
 
           <!-- File Details -->
-          <div class="flex flex-col self-start ml-4 landscape:col-start-2 landscape:col-span-3 gap-2">
+          <div
+            class="flex flex-col self-start ml-4 landscape:col-start-2 landscape:col-span-3 gap-2"
+          >
             <p class="text-sm font-semibold">{{ file.name }}</p>
             <p class="text-xs text-gray-500">{{ file.path }}</p>
             <div>
@@ -156,65 +176,85 @@
                     label: 'Rank',
                     icon: 'fluent:crown-20-filled',
                     badge: {
-                      label: ((file?.confidenceScore || 0) * 100).toFixed(1) + '%',
+                      label:
+                        ((file?.confidenceScore || 0) * 100).toFixed(1) + '%',
                       color: 'amber',
                       variant: 'soft',
                     },
                     active: getTagOptCache(file.name) === OptCategories.RANK,
-                    click: () => setMenuOptCache(file.name, OptCategories.RANK) 
+                    click: () => setMenuOptCache(file.name, OptCategories.RANK),
                   },
-                  { 
-                    label: 'Applied Tags', 
-                    icon: 'fluent:tag-multiple-16-filled', 
+                  {
+                    label: 'Applied Tags',
+                    icon: 'fluent:tag-multiple-16-filled',
                     badge: {
-                      label: file.highConfidenceTags.length, 
+                      label: file.highConfidenceTags.length,
                       color: 'emerald',
-                      variant: 'soft'
+                      variant: 'soft',
                     },
-                    active: getTagOptCache(file.name) === OptCategories.ASSIGNED,
-                    click: () => setMenuOptCache(file.name, OptCategories.ASSIGNED) 
+                    active:
+                      getTagOptCache(file.name) === OptCategories.ASSIGNED,
+                    click: () =>
+                      setMenuOptCache(file.name, OptCategories.ASSIGNED),
                   },
-                  { 
-                    label: 'Excluded Tags', 
-                    icon: 'fluent:tag-multiple-16-regular', 
+                  {
+                    label: 'Excluded Tags',
+                    icon: 'fluent:tag-multiple-16-regular',
                     badge: {
-                      label: file.lowConfidenceTags.length, 
+                      label: file.lowConfidenceTags.length,
                       color: 'rose',
-                      variant: 'soft'
+                      variant: 'soft',
                     },
-                    active: getTagOptCache(file.name) === OptCategories.EXCLUDED,
-                    click: () => setMenuOptCache(file.name, OptCategories.EXCLUDED) 
+                    active:
+                      getTagOptCache(file.name) === OptCategories.EXCLUDED,
+                    click: () =>
+                      setMenuOptCache(file.name, OptCategories.EXCLUDED),
                   },
                   {
                     label: 'Scan',
                     avatar: {
-                      icon: loaders.hasActiveLoaders(Prefixes.ANALYZE + file.name) || loaders.hasQueuedLoaders(Prefixes.ANALYZE + file.name)
-                      ? 'fluent:tag-search-20-filled'
-                      : 'fluent:tag-search-20-regular',
-                      chipColor: loaders.hasQueuedLoaders(Prefixes.ANALYZE + file.name) ?
-                        'amber' : loaders.hasActiveLoaders(Prefixes.ANALYZE + file.name) ? 'rose' : undefined,
+                      icon:
+                        loaders.hasActiveLoaders(
+                          Prefixes.ANALYZE + file.name,
+                        ) ||
+                        loaders.hasQueuedLoaders(Prefixes.ANALYZE + file.name)
+                          ? 'fluent:tag-search-20-filled'
+                          : 'fluent:tag-search-20-regular',
+                      chipColor: loaders.hasQueuedLoaders(
+                        Prefixes.ANALYZE + file.name,
+                      )
+                        ? 'amber'
+                        : loaders.hasActiveLoaders(Prefixes.ANALYZE + file.name)
+                          ? 'rose'
+                          : undefined,
                     },
-                    disabled: [...file.highConfidenceTags, ...file.lowConfidenceTags].length > 0,
+                    disabled:
+                      [...file.highConfidenceTags, ...file.lowConfidenceTags]
+                        .length > 0,
                     click: () => fileStore.analyzeImage(file),
-                  }
+                  },
                 ]"
               />
-              <div v-show="getTagOptCache(file.name) === OptCategories.RANK" class="ml-4 flex flex-col gap-2 m-4">
+              <div
+                v-show="getTagOptCache(file.name) === OptCategories.RANK"
+                class="ml-4 flex flex-col gap-2 m-4"
+              >
                 <ATag
-                  v-for="score, tag in file.confidenceKeys"
+                  v-for="(score, tag) in file.confidenceKeys"
                   :key="tag"
                   :label="`${tag} (${(score * 100).toFixed(1)}%)`"
                   :exists="true"
                   :simple="true"
                 />
 
-                <div
-                  v-if="!file.tags.length && !file?.confidenceKeys?.length"
-                >
+                <div v-if="!file.tags.length && !file?.confidenceKeys?.length">
                   <p class="text-zinc-50/25">None</p>
                 </div>
               </div>
-              <div v-show="getTagOptCache(file.name) === OptCategories.ASSIGNED" class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4">
+              <div
+                v-show="getTagOptCache(file.name) === OptCategories.ASSIGNED"
+                class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4"
+              >
                 <ATag
                   v-for="tag in file.highConfidenceTags.length
                     ? file.highConfidenceTags
@@ -259,122 +299,125 @@
   </div>
 
   <!-- Bottom Rounded Toolbar -->
-  <div class="w-full fixed flex flex-col-reverse justify-center items-center bottom-6 gap-2 pointer-events-none">
-
+  <div
+    class="w-full fixed flex flex-col-reverse justify-center items-center bottom-6 gap-2 pointer-events-none"
+  >
     <!-- Navigation -->
-  <div
-    v-if="visibleFiles.length"
-    class="flex justify-center gap-8 pointer-events-none"
-  >
     <div
-      class="p-2 bg-slate-800/95 flex items-center justify-center gap-2 rounded-full shadow-lg shadow-black/25 z-10 pointer-events-auto border-none"
+      v-if="visibleFiles.length"
+      class="flex justify-center gap-8 pointer-events-none"
     >
-    <UButton
-      icon="fluent:arrow-previous-16-filled"
-      variant="ghost"
-      size="sm"
-      color="white"
-      class="rounded-full p-2"
-      :style="{ opacity: fileStore.page === 1 ? 0.2 : 1 }"
-      :disabled="fileStore.page === 1"
-      @click="setPage(1)"
-      />
-    <UButton
-      icon="fluent:chevron-left-16-filled"
-      variant="ghost"
-      size="sm"
-      color="white"
-      class="rounded-full p-2"
-      :style="{ opacity: fileStore.page === 1 ? 0.2 : 1 }"
-      :disabled="fileStore.page === 1"
-      @click="setPage(fileStore.page-1)"
-      />
-    <span class="text-md text-center">{{ fileStore.page }}/{{ fileStore.pages}}</span>
-    <UButton 
-      icon="fluent:chevron-right-16-filled" 
-      variant="ghost" 
-      size="sm" 
-      color="white" 
-      class="rounded-full p-2" 
-      :style="{ opacity: fileStore.page === fileStore.pages ? 0.2 : 1 }"
-      :disabled="fileStore.page === fileStore.pages"
-      @click="setPage(fileStore.page+1)"
-      />
-    <UButton 
-      icon="fluent:arrow-next-16-filled" 
-      variant="ghost" 
-      size="sm" 
-      color="white" 
-      class="rounded-full p-2" 
-      :style="{ opacity: fileStore.page === fileStore.pages ? 0.2 : 1 }"
-      :disabled="fileStore.page === fileStore.pages"
-      @click="setPage(fileStore.pages)"
-      />
-  </div>
-  </div>
-
-  <!-- Batch Tools -->
-  <div
-    v-if="directoryStore.workingDirectory !== ''"
-    class="flex justify-center gap-12 pointer-events-none"
-  >
-    <div
-      class="p-2 bg-slate-950/90 rounded-full shadow-lg shadow-black/25 z-10 pointer-events-auto border-none"
-      :class="[activityEffect]"
-      :style="animationEffect"
-    >
-      <div class="flex justify-center items-center gap-4">
-        <UTooltip
-          text="Upload Images"
-          :popper="{ arrow: true, placement: 'top' }"
+      <div
+        class="p-2 bg-slate-800/95 flex items-center justify-center gap-2 rounded-full shadow-lg shadow-black/25 z-10 pointer-events-auto border-none"
+      >
+        <UButton
+          icon="fluent:arrow-previous-16-filled"
+          variant="ghost"
+          size="sm"
+          color="white"
+          class="rounded-full p-2"
+          :style="{ opacity: fileStore.page === 1 ? 0.2 : 1 }"
+          :disabled="fileStore.page === 1"
+          @click="setPage(1)"
+        />
+        <UButton
+          icon="fluent:chevron-left-16-filled"
+          variant="ghost"
+          size="sm"
+          color="white"
+          class="rounded-full p-2"
+          :style="{ opacity: fileStore.page === 1 ? 0.2 : 1 }"
+          :disabled="fileStore.page === 1"
+          @click="setPage(fileStore.page - 1)"
+        />
+        <span class="text-md text-center"
+          >{{ fileStore.page }}/{{ fileStore.pages }}</span
         >
-          <UButton
-            icon="fluent:image-add-32-light"
-            variant="solid"
-            color="indigo"
-            class="rounded-full p-2"
-            :disabled="showActivity"
-            size="lg"
-            :ui="{ icon: { size: { lg: 'w-8 h-8' } } }"
-            @click="uploadFiles"
-          />
-        </UTooltip>
-        <UTooltip
-          text="Make All Square"
-          :popper="{ arrow: true, placement: 'top' }"
-        >
-          <UButton
-            icon="fluent:color-background-20-regular"
-            variant="solid"
-            :color="fileStore.hasNonSquareFiles ? 'emerald' : 'white'"
-            :disabled="!fileStore.hasNonSquareFiles || showActivity"
-            class="rounded-full p-2"
-            size="lg"
-            :ui="{ icon: { size: { lg: 'w-8 h-8' } } }"
-            @click="makeAllSquare"
-          />
-        </UTooltip>
-        <UTooltip
-          text="Scan Directory"
-          :popper="{ arrow: true, placement: 'top' }"
-        >
-          <UButton
-            icon="fluent:slide-multiple-search-20-regular"
-            variant="solid"
-            size="lg"
-            class="rounded-full p-2"
-            :disabled="
-              loaders.hasActiveLoaders(Prefixes.ANALYZE) ||
-              loaders.hasQueuedLoaders(Prefixes.ANALYZE) ||
-              showActivity
-            "
-            :ui="{ icon: { size: { lg: 'w-8 h-8' } } }"
-            @click="analyzeDirectory"
-          />
-        </UTooltip>
+        <UButton
+          icon="fluent:chevron-right-16-filled"
+          variant="ghost"
+          size="sm"
+          color="white"
+          class="rounded-full p-2"
+          :style="{ opacity: fileStore.page === fileStore.pages ? 0.2 : 1 }"
+          :disabled="fileStore.page === fileStore.pages"
+          @click="setPage(fileStore.page + 1)"
+        />
+        <UButton
+          icon="fluent:arrow-next-16-filled"
+          variant="ghost"
+          size="sm"
+          color="white"
+          class="rounded-full p-2"
+          :style="{ opacity: fileStore.page === fileStore.pages ? 0.2 : 1 }"
+          :disabled="fileStore.page === fileStore.pages"
+          @click="setPage(fileStore.pages)"
+        />
       </div>
     </div>
-  </div>
+
+    <!-- Batch Tools -->
+    <div
+      v-if="directoryStore.workingDirectory !== ''"
+      class="flex justify-center gap-12 pointer-events-none"
+    >
+      <div
+        class="p-2 bg-slate-950/90 rounded-full shadow-lg shadow-black/25 z-10 pointer-events-auto border-none"
+        :class="[activityEffect]"
+        :style="animationEffect"
+      >
+        <div class="flex justify-center items-center gap-4">
+          <UTooltip
+            text="Upload Images"
+            :popper="{ arrow: true, placement: 'top' }"
+          >
+            <UButton
+              icon="fluent:image-add-32-light"
+              variant="solid"
+              color="indigo"
+              class="rounded-full p-2"
+              :disabled="showActivity"
+              size="lg"
+              :ui="{ icon: { size: { lg: 'w-8 h-8' } } }"
+              @click="uploadFiles"
+            />
+          </UTooltip>
+          <UTooltip
+            text="Make All Square"
+            :popper="{ arrow: true, placement: 'top' }"
+          >
+            <UButton
+              icon="fluent:color-background-20-regular"
+              variant="solid"
+              :color="fileStore.hasNonSquareFiles ? 'emerald' : 'white'"
+              :disabled="!fileStore.hasNonSquareFiles || showActivity"
+              class="rounded-full p-2"
+              size="lg"
+              :ui="{ icon: { size: { lg: 'w-8 h-8' } } }"
+              @click="makeAllSquare"
+            />
+          </UTooltip>
+          <UTooltip
+            text="Scan Directory"
+            :popper="{ arrow: true, placement: 'top' }"
+          >
+            <UButton
+              icon="fluent:slide-multiple-search-20-regular"
+              variant="solid"
+              size="lg"
+              class="rounded-full p-2"
+              :disabled="
+                loaders.hasActiveLoaders(Prefixes.ANALYZE) ||
+                loaders.hasQueuedLoaders(Prefixes.ANALYZE) ||
+                showActivity
+              "
+              :ui="{ icon: { size: { lg: 'w-8 h-8' } } }"
+              @click="analyzeDirectory"
+            />
+          </UTooltip>
+        </div>
+      </div>
+    </div>
   </div>
 
   <UModals />
@@ -428,7 +471,8 @@ const tagOptCache = ref<Record<string, OptCategories>>({});
 const setMenuOptCache = (tag: string, value: OptCategories) => {
   tagOptCache.value[tag] = value;
 };
-const getTagOptCache = (tag: string) => tagOptCache.value[tag] || OptCategories.ASSIGNED;
+const getTagOptCache = (tag: string) =>
+  tagOptCache.value[tag] || OptCategories.ASSIGNED;
 
 const cropTarget = ref<ImageFile | null>(null);
 const closeCropModal = () => {
@@ -452,7 +496,7 @@ const openTagPanel = () => {
       setPage();
     },
     onClose: () => {
-      slideover.close(); 
+      slideover.close();
     },
   });
 };
@@ -470,8 +514,11 @@ onMounted(async () => {
   animateRotation();
 });
 
+// valid square ratios should either 1:1, 0.75:1, 1.33:1
 const isSquare = (file: ImageFile) =>
-  file.dimensions.width === file.dimensions.height;
+  file.dimensions.width === file.dimensions.height ||
+  (file.dimensions.width / file.dimensions.height).toFixed(2) === "0.75" ||
+  (file.dimensions.width / file.dimensions.height).toFixed(2) === "1.33";
 
 const deleteFile = (file: ImageFile) => {
   fileStore.deleteFile(file.path);
@@ -484,7 +531,7 @@ const analyzeDirectory = async () => {
 };
 
 const setPage = async (page: number = 1) => {
-  if (mediaRef.value) mediaRef.value.scrollTop = 0; 
+  if (mediaRef.value) mediaRef.value.scrollTop = 0;
   fileStore.setPage(page);
 };
 
@@ -493,11 +540,14 @@ const attemptMakeSquare = (file: ImageFile) => {
 };
 const makeAllSquare = async () => {
   setAnimation("make-square-effect");
-  fileStore.files.forEach(async (file) => {
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  for (const file of fileStore.files) {
     if (!isSquare(file)) {
       await makeSquare(file, resolveImageEdit);
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
-  });
+  }
+  console.log("done");
   stopAnimation();
 };
 
@@ -506,8 +556,10 @@ const resolveImageEdit = async (dataUrl: string, file: ImageFile) => {
   await fileStore.updateFile(file, blob);
 
   const index = visibleFiles.value.findIndex((f) => f.path === file.path);
+  if (index === -1) return;
   visibleFiles.value[index].dimensions = file.dimensions;
-  visibleFiles.value[index].resource = dataUrl;
+  visibleFiles.value[index].resource =
+    `${visibleFiles.value[index].resource}?cb=${Date.now()}`;
 };
 
 const uploadFiles = async () => {
@@ -536,7 +588,7 @@ const animationEffect = computed(() => {
     "--rotation": `${rotation.value}deg`,
   };
 });
-const showActivity = ref(false); 
+const showActivity = ref(false);
 const activityEffect = ref<string>("");
 const setAnimation = (effect: string) => {
   activityEffect.value = effect;
@@ -552,34 +604,42 @@ const animateRotation = () => {
   if (showActivity.value) requestAnimationFrame(animateRotation);
 };
 
-const collapsedHeaderMenu = ref<any[]>([[{
-  label: "Change Directory",
-  icon: "fluent:folder-open-20-regular",
-  click: openDirectoryModal,
+const collapsedHeaderMenu = ref<any[]>([
+  [
+    {
+      label: "Change Directory",
+      icon: "fluent:folder-open-20-regular",
+      click: openDirectoryModal,
     },
-  {
-    label: "Options",
-    icon: "fluent:options-20-regular",
-    click: openTagPanel,
-  }]]);
+    {
+      label: "Options",
+      icon: "fluent:options-20-regular",
+      click: openTagPanel,
+    },
+  ],
+]);
 </script>
 
 <style scoped>
 .make-square-effect {
-  background: linear-gradient(rgb(2 6 23 / 0.9), rgb(2 6 23 / 0.9)) padding-box,
-              linear-gradient( var(--rotation), rgb(52 211 153), black) border-box;
+  background:
+    linear-gradient(rgb(2 6 23 / 0.9), rgb(2 6 23 / 0.9)) padding-box,
+    linear-gradient(var(--rotation), rgb(52 211 153), black) border-box;
   border-radius: 50em;
   border: 2px solid transparent;
 }
 .scan-media-effect {
-  background: linear-gradient(rgb(2 6 23 / 0.9), rgb(2 6 23 / 0.9)) padding-box,
-              linear-gradient( var(--rotation), rgb(var(--color-primary-400)), black) border-box;
+  background:
+    linear-gradient(rgb(2 6 23 / 0.9), rgb(2 6 23 / 0.9)) padding-box,
+    linear-gradient(var(--rotation), rgb(var(--color-primary-400)), black)
+      border-box;
   border-radius: 50em;
   border: 2px solid transparent;
 }
 .upload-media-effect {
-  background: linear-gradient(rgb(2 6 23 / 0.9), rgb(2 6 23 / 0.9)) padding-box,
-              linear-gradient( var(--rotation), rgb(129 140 248), black) border-box;
+  background:
+    linear-gradient(rgb(2 6 23 / 0.9), rgb(2 6 23 / 0.9)) padding-box,
+    linear-gradient(var(--rotation), rgb(129 140 248), black) border-box;
   border-radius: 50em;
   border: 2px solid transparent;
 }
