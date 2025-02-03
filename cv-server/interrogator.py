@@ -26,6 +26,11 @@ class Interrogator:
         self.tags = self.tagger.source_tags(self.model.tags_path)
         print(f"Loaded tags from {self.model.tags_path}")
 
+    def ensure_model_loaded(self):
+        if not self.model:
+            model = self.models.get_default_model()
+            self.load_model(model.repo)
+
     def process_file(
         self,
         image_path: str,

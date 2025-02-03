@@ -16,6 +16,7 @@ def models_endpoint():
 
 @app.route("/tags")
 def tags_endpoint():
+    interrogator.ensure_model_loaded()
     return jsonify(interrogator.tagger.list_tags()), 200
 
 
