@@ -92,75 +92,6 @@
               :src="file.resource"
               style="height: 100%; width: 100%; object-fit: contain"
             />
-            <div
-              id="hover-menu"
-              class="absolute w-full h-full bg-zinc-900/40 opacity-0 hover:opacity-100 flex flex-col items-center justify-center transition ease-in-out duration-300"
-            >
-              <div class="w-full flex flex-row justify-center gap-2">
-                <UTooltip
-                  text="Analyze Image"
-                  :popper="{ arrow: true, placement: 'top' }"
-                >
-                  <UButton
-                    icon="fluent:image-search-20-regular"
-                    color="primary"
-                    class="rounded-full p-2"
-                    variant="solid"
-                    size="xs"
-                    :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
-                    :disabled="
-                      loaders.isLoading(Prefixes.ANALYZE + file.name) ||
-                      loaders.isQueued(Prefixes.ANALYZE + file.name)
-                    "
-                    @click="fileStore.analyzeImage(file)"
-                  />
-                </UTooltip>
-              </div>
-              <div class="w-full flex flex-row justify-center gap-2">
-                <UTooltip
-                  text="Make Square"
-                  :popper="{ arrow: true, placement: 'top' }"
-                >
-                  <UButton
-                    icon="fluent:color-background-20-regular"
-                    :color="isSquare(file) ? 'white' : 'emerald'"
-                    class="rounded-full p-2"
-                    variant="solid"
-                    size="xs"
-                    :disabled="isSquare(file)"
-                    @click="attemptMakeSquare(file)"
-                  />
-                </UTooltip>
-                <UTooltip
-                  text="Crop Image"
-                  :popper="{ arrow: true, placement: 'top' }"
-                >
-                  <UButton
-                    icon="fluent:crop-16-regular"
-                    color="emerald"
-                    class="rounded-full p-2"
-                    variant="solid"
-                    size="xs"
-                    @click="cropTarget = file"
-                  />
-                </UTooltip>
-              </div>
-              <div class="w-full flex flex-row justify-center gap-2">
-                <UTooltip
-                  text="Delete Image"
-                  :popper="{ arrow: true, placement: 'top' }"
-                >
-                  <UButton
-                    icon="fluent:delete-16-regular"
-                    color="red"
-                    class="rounded-full p-2"
-                    variant="solid"
-                    size="xs"
-                    @click="deleteFile(file)"
-                  />
-                </UTooltip>
-              </div>
-            </div>
           </div>
 
           <!-- File Details -->
@@ -209,6 +140,13 @@
                       getTagOptCache(file.name) === OptCategories.EXCLUDED,
                     click: () =>
                       setMenuOptCache(file.name, OptCategories.EXCLUDED),
+                  },
+                  {
+                    label: 'Tools',
+                    icon: 'fluent:developer-board-lightning-toolbox-20-regular',
+                    active: getTagOptCache(file.name) === OptCategories.TOOLS,
+                    click: () =>
+                      setMenuOptCache(file.name, OptCategories.TOOLS),
                   },
                   {
                     label: 'Scan',
@@ -271,6 +209,13 @@
                 >
                   <p class="text-zinc-50/25">None</p>
                 </div>
+
+                <div class="col-start-1 col-span-full flex flex-row gap-2 mt-4">
+                  <h4>Add Tags</h4>
+                  <TagInput
+                    @add="(tag: string) => fileStore.addTag(file, [tag])"
+                  />
+                </div>
               </div>
               <div
                 v-show="getTagOptCache(file.name) === OptCategories.EXCLUDED"
@@ -288,6 +233,57 @@
                 <div v-if="!file?.lowConfidenceTags?.length">
                   <p class="text-zinc-50/25">None</p>
                 </div>
+              </div>
+              <div
+                v-show="getTagOptCache(file.name) === OptCategories.TOOLS"
+                class="ml-4 grid grid-flow-col grid-rows-5 grid-cols-3 gap-2 m-4"
+              >
+                <UButton
+                  icon="fluent:image-search-20-regular"
+                  color="primary"
+                  class="rounded-full p-2"
+                  variant="solid"
+                  size="xs"
+                  :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
+                  :disabled="
+                    loaders.isLoading(Prefixes.ANALYZE + file.name) ||
+                    loaders.isQueued(Prefixes.ANALYZE + file.name)
+                  "
+                  @click="fileStore.analyzeImage(file)"
+                >
+                  Analyze Image
+                </UButton>
+                <UButton
+                  icon="fluent:color-background-20-regular"
+                  :color="isSquare(file) ? 'white' : 'emerald'"
+                  class="rounded-full p-2"
+                  variant="solid"
+                  size="xs"
+                  :disabled="isSquare(file)"
+                  @click="attemptMakeSquare(file)"
+                >
+                  Make Square
+                </UButton>
+                <UButton
+                  icon="fluent:crop-16-regular"
+                  color="emerald"
+                  class="rounded-full p-2"
+                  variant="solid"
+                  size="xs"
+                  @click="cropTarget = file"
+                >
+                  Crop Image
+                </UButton>
+                <UButton
+                  icon="fluent:delete-16-regular"
+                  color="red"
+                  class="rounded-full p-2"
+                  variant="solid"
+                  size="xs"
+                  @click="deleteFile(file)"
+                >
+                  Delete Image
+                </UButton>
               </div>
             </div>
           </div>
@@ -457,6 +453,7 @@ const { visibleFiles } = storeToRefs(fileStore);
 
 import { useMakeSquare } from "~/composables/useMakeSquare";
 import OptionsSlideover from "~/components/ui/OptionsSlideover.vue";
+import TagInput from "~/components/ui/TagInput.vue";
 const { makeSquare } = useMakeSquare();
 
 const mediaRef = useTemplateRef("media-list");
@@ -466,6 +463,7 @@ enum OptCategories {
   RANK = "rank",
   ASSIGNED = "assigned",
   EXCLUDED = "excluded",
+  TOOLS = "tools",
 }
 const tagOptCache = ref<Record<string, OptCategories>>({});
 const setMenuOptCache = (tag: string, value: OptCategories) => {
@@ -477,6 +475,15 @@ const getTagOptCache = (tag: string) =>
 const cropTarget = ref<ImageFile | null>(null);
 const closeCropModal = () => {
   cropTarget.value = null;
+};
+
+const moveSelection = ref<Set<string>>(new Set());
+const toggleSelection = (file: ImageFile) => {
+  if (moveSelection.value.has(file.hash)) {
+    moveSelection.value.delete(file.hash);
+  } else {
+    moveSelection.value.add(file.hash);
+  }
 };
 
 const modal = useModal();

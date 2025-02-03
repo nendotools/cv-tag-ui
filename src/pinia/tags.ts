@@ -48,7 +48,9 @@ export const useTags = defineStore("tags", {
       return categories;
     },
     rawTags: (state) =>
-      state.modelTags[state.activeModel].map((tag) => tag.name.replaceAll("_", " ")),
+      state.modelTags[state.activeModel].map((tag) =>
+        tag.name.replaceAll("_", " "),
+      ),
     generalTags: (state) =>
       state.modelTags[state.activeModel]
         .filter((tag) => tag.category === 0)
@@ -90,18 +92,25 @@ export const useTags = defineStore("tags", {
     async fetchModels() {
       const models = await $fetch<string[]>("/inferrence/models");
       this.models = models;
+      this.setActiveModel(DEFAULT_MODEL);
       this.fetchTags();
     },
     async fetchTags() {
-      const model = this.models.includes(this.activeModel) ? this.activeModel : this.models[0];
-      const tags = await $fetch<{ name: string; category: number }[]>(`/inferrence/tags`, {
-        headers: {
-          "Content-Type": "application/json",
+      const model = this.models.includes(this.activeModel)
+        ? this.activeModel
+        : this.models[0];
+      console.log("Fetching tags for model", model);
+      const tags = await $fetch<{ name: string; category: number }[]>(
+        `/inferrence/tags`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          query: {
+            model,
+          },
         },
-        query: {
-          model,
-        },
-      });
+      );
       if (tags) {
         this.modelTags[this.activeModel] = tags;
       }
