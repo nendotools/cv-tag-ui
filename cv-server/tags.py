@@ -14,9 +14,10 @@ class Tagger:
             return
 
         self.tags = []
-        self.tags = pd.read_csv(tag_path, sep=",", skiprows=1, header=None).values.tolist()
+        self.tags = pd.read_csv(tag_path, sep=",", header=0, index_col=0)
+        tagsets = pd.read_csv(tag_path, sep=",", skiprows=1, header=None).values.tolist()
         # tag format: [tag, description, type_id, count]
-        for tag in self.tags:
+        for tag in tagsets:
             if tag[2] == 9:
                 self.rating_tags.append(tag[1])
             if tag[2] == 4:
