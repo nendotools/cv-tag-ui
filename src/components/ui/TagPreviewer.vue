@@ -64,6 +64,15 @@ const filterHashes = ref<Set<string>>(new Set());
 onMounted(() => {
   filterHashes.value.clear();
 });
+watch(
+  () => props.open,
+  (open) => {
+    if (!open) {
+      filterHashes.value.clear();
+    }
+  },
+);
+
 const filter = (hash: string) => {
   filterHashes.value.add(hash);
 };
