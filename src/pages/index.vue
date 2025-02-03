@@ -201,7 +201,9 @@
                   :label="tag"
                   :exists="true"
                   :simple="mode !== 'tag'"
+                  :class="{ 'cursor-pointer': mode === 'view' }"
                   @delete="fileStore.removeTag(file, [tag])"
+                  @click.stop="setFocusTag(tag)"
                 />
 
                 <div
@@ -227,7 +229,9 @@
                   :label="tag"
                   :exists="false"
                   :simple="mode !== 'tag'"
+                  :class="{ 'cursor-pointer': mode === 'view' }"
                   @add="fileStore.addTag(file, [tag])"
+                  @click.stop="setFocusTag(tag)"
                 />
 
                 <div v-if="!file?.lowConfidenceTags?.length">
@@ -424,6 +428,11 @@
     :save-callback="resolveImageEdit"
     @close="closeCropModal"
   />
+  <TagPreviewer
+    :open="!!focusTag"
+    :tag="focusTag"
+    @close="() => (focusTag = null)"
+  />
 </template>
 
 <script setup lang="ts">
@@ -433,6 +442,7 @@ import ATag from "~/components/ui/ATag.vue";
 import SendMenu from "~/components/ui/SendMenu.vue";
 import AHeader from "~/components/ui/AHeader.vue";
 import CropModal from "~/components/ui/CropModal.vue";
+import TagPreviewer from "~/components/ui/TagPreviewer.vue";
 import DirectoryModal from "~/components/ui/DirectoryModal.vue";
 
 import { useLoaders, Prefixes } from "~/pinia/loaders";
@@ -475,6 +485,12 @@ const getTagOptCache = (tag: string) =>
 const cropTarget = ref<ImageFile | null>(null);
 const closeCropModal = () => {
   cropTarget.value = null;
+};
+
+const focusTag = ref<string | null>(null);
+const setFocusTag = (tag: string) => {
+  if (mode.value === "tag") return;
+  focusTag.value = tag;
 };
 
 const moveSelection = ref<Set<string>>(new Set());

@@ -6,7 +6,7 @@
       !simple ? ['bg-teal-50/10', 'border', 'border-teal-50/20'] : '',
     ]"
   >
-    <div class="text-md w-max cursor-default select-none">
+    <div class="text-md w-max select-none">
       {{ label }}
     </div>
     <UButton
@@ -40,14 +40,15 @@
 
 <script setup lang="ts">
 withDefaults(
-defineProps<{
-  label: string;
-  simple?: boolean;
-  exists: boolean;
-}>(),
-{
-  simple: false,
-});
+  defineProps<{
+    label: string;
+    simple?: boolean;
+    exists: boolean;
+  }>(),
+  {
+    simple: false,
+  },
+);
 
 defineEmits(["add", "delete"]);
 </script>
