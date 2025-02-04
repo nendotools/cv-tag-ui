@@ -47,9 +47,8 @@ export const useFiles = defineStore("files", {
 
       for (const file of state.files) {
         const words = file.highConfidenceTags
-          .join(" ")
-          .split(" ")
-          .map((word) => word.toLowerCase());
+          .map((word) => (word.split(" ").pop() || "").toLowerCase())
+          .filter((word) => word.length > 0);
         duplicates[file.hash] = words.filter(
           (word, index) => words.indexOf(word) !== index,
         );
