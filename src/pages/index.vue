@@ -215,6 +215,7 @@
                 <div class="col-start-1 col-span-full flex flex-row gap-2 mt-4">
                   <h4>Add Tags</h4>
                   <TagInput
+                    :tags="file.highConfidenceTags"
                     @add="(tag: string) => fileStore.addTag(file, [tag])"
                   />
                 </div>

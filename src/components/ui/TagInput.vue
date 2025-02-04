@@ -29,7 +29,7 @@ const { aggregateTags } = storeToRefs(fileStore);
 const { rawTags } = storeToRefs(tagStore);
 
 const tagSearch = ref("");
-withDefaults(
+const props = withDefaults(
   defineProps<{
     label?: string;
     tags?: string[];
@@ -50,6 +50,7 @@ const queryTags = async (q: string) => {
     // return top 10 results from aggregated tags list on fileStore
     // need to sort Record<string, number> by value and return the keys
     return Object.keys(fileStore.aggregateTags)
+      .filter((tag) => !props.tags.includes(tag))
       .sort((a, b) => fileStore.aggregateTags[b] - fileStore.aggregateTags[a])
       .slice(0, 10);
   }

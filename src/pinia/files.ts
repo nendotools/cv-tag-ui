@@ -278,6 +278,7 @@ export const useFiles = defineStore("files", {
       const fileIndex = this.files.findIndex((f) => f.path === file.path);
       if (fileIndex !== -1) {
         for (const t of tags) {
+          if (this.files[fileIndex].highConfidenceTags.includes(t)) continue;
           this.files[fileIndex].highConfidenceTags.push(t);
         }
 
