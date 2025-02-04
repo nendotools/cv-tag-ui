@@ -452,7 +452,6 @@ export const useFiles = defineStore("files", {
         }
       }
       console.log("Finished analyzing all images");
-      console.log("Queue", queue);
     },
 
     async uploadFiles(files: FileList) {

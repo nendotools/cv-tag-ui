@@ -54,9 +54,6 @@ const queryTags = async (q: string) => {
       .sort((a, b) => fileStore.aggregateTags[b] - fileStore.aggregateTags[a])
       .slice(0, 10);
   }
-  console.log(rawTags.value.length);
-  const filteredTags = rawTags.value.filter((tag) => tag.includes(q));
-  console.log(filteredTags);
   return [
     ...new Set([
       q,

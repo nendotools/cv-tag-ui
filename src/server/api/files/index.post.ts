@@ -111,7 +111,6 @@ const prepareFile = (
   checkpoint = "confidence";
   if (fs.existsSync(`${dir}/${name}.json`)) {
     const json = JSON.parse(fs.readFileSync(`${dir}/${name}.json`, "utf-8"));
-    console.log(name, json);
     image.highConfidenceTags = Object.keys(json.high);
     image.lowConfidenceTags = Object.keys(json.low);
     // combine and sort tags, high confidence tags first, select the top 5 as ConfidenceKeys and calculate the confidence score

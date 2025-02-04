@@ -2,7 +2,6 @@ import { spawn } from "child_process";
 
 export default defineNitroPlugin((nitro) => {
   nitro.hooks.hook("request", () => {
-    console.log("starting python server from request hook");
     // tie a python server to the app object
     let { app } = nitro as typeof nitro & { app: { py: any } };
     if (!app) {

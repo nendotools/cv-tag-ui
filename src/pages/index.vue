@@ -553,9 +553,8 @@ const unOptimized = (file: ImageFile) => {
 
   // if the high confidence tags are not empty, then return true if the tags include no duplicate words in all tags
   const words = file.highConfidenceTags
-    .join(" ")
-    .split(" ")
-    .map((word) => word.toLowerCase());
+    .map((word) => (word.split(" ").pop() || "").toLowerCase())
+    .filter((word) => word.length > 0);
   return new Set(words).size === words.length;
 };
 
