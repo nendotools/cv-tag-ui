@@ -22,7 +22,7 @@
         <UInputMenu
           class="flex-1"
           placeholder="Directory path"
-          :options="options"
+          :options="[...options, { id: 'cur', label: current }]"
           value-attribute="id"
           option-attribute="id"
           :search-attributes="['id']"
@@ -49,6 +49,14 @@
             @click="onSaveCurrent"
           >
             Use Current
+          </UButton>
+          <UButton
+            v-if="createNew"
+            :loading="loading"
+            :disabled="loading"
+            @click="startCreate"
+          >
+            Create New
           </UButton>
         </div>
       </div>
@@ -235,7 +243,7 @@ const subdirectories = computed(() => {
   return directoryStore.relatedDirectories;
 });
 const refocusing = computed(() => {
-  return current.value !== directoryStore.baseDirectory;
+  return current.value !== directoryStore.baseDirectory && !createNew.value;
 });
 const parentDir = computed(() =>
   current.value.split("/").slice(0, -1).join("/"),
@@ -263,12 +271,41 @@ const updateDirectoryList = async (targetDir: string) => {
   });
 };
 
+watch(
+  () => current.value,
+  (val) => {
+    if (val === "") {
+      current.value = "/";
+    }
+    const latest = current.value.split("/").pop();
+
+    createNew.value = false;
+    if (
+      latest &&
+      latest.length > 0 &&
+      !options.value.map((v) => v.label).includes(latest)
+    ) {
+      createNew.value = true;
+    }
+  },
+);
+
+const createNew = ref(false);
 // on input, if the value ends in a slash, update the current value and fetch directories from the server
 const onInput = (e: Event) => {
   const target = e.target as HTMLInputElement;
 
   if (target.value.endsWith("/")) {
     updateDirectoryList(target.value.slice(0, -1));
+  }
+
+  const latest = current.value.split("/").pop();
+  if (
+    latest &&
+    latest.length > 0 &&
+    !options.value.map((v) => v.id).includes(latest)
+  ) {
+    createNew.value = true;
   }
 };
 

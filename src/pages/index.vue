@@ -449,7 +449,6 @@
 import { storeToRefs } from "pinia";
 
 import ATag from "~/components/ui/ATag.vue";
-import SendMenu from "~/components/ui/SendMenu.vue";
 import AHeader from "~/components/ui/AHeader.vue";
 import CropModal from "~/components/ui/CropModal.vue";
 import TagPreviewer from "~/components/ui/TagPreviewer.vue";
