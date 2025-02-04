@@ -100,11 +100,17 @@
           >
             <p class="text-sm font-semibold">{{ file.name }}</p>
             <p class="text-xs text-gray-500">{{ file.path }}</p>
-            <p class="text-xs text-gray-500">
-              {{ file.dimensions.width }} x {{ file.dimensions.height }}
-            </p>
-            <p class="text-xs text-gray-500">
-              Optimized Tags: {{ unOptimized(file) }}
+            <p class="text-xs">
+              Dimensions:
+              <span
+                :class="{
+                  'text-rose-500': isSmall(file.dimensions),
+                  'text-amber-500': isMedium(file.dimensions),
+                  'text-emerald-500': isLarge(file.dimensions),
+                }"
+              >
+                {{ file.dimensions.width }} x {{ file.dimensions.height }}
+              </span>
             </p>
             <div>
               <UHorizontalNavigation
@@ -531,21 +537,39 @@ const openTagPanel = () => {
 onMounted(async () => {
   tagStore.fetchModels();
   const directory = recall("directory");
+  const acttiveDirectory = recall("activeDirectory");
   const threshold = recall("threshold");
   if (threshold) fileStore.setThreshold(threshold);
 
   if (directory && directoryStore.baseDirectory === "") {
     directoryStore.setDirectory(directory, true);
+    if (acttiveDirectory) {
+      directoryStore.activeDirectory = acttiveDirectory;
+      fileStore.setDirectory(directoryStore.workingDirectory);
+    }
   }
-  openDirectoryModal();
+
+  if (!acttiveDirectory) openDirectoryModal();
   animateRotation();
 });
 
-// valid square ratios should either 1:1, 0.75:1, 1.33:1
+// valid square ratios should either 1:1, 3:4, or 4:3
 const isSquare = (file: ImageFile) =>
   file.dimensions.width === file.dimensions.height ||
   (file.dimensions.width / file.dimensions.height).toFixed(2) === "0.75" ||
   (file.dimensions.width / file.dimensions.height).toFixed(2) === "1.33";
+
+const isSmall = (dimensions: { width: number; height: number }) => {
+  return dimensions.width + dimensions.height < 513;
+};
+
+const isMedium = (dimensions: { width: number; height: number }) => {
+  return dimensions.width + dimensions.height < 2048;
+};
+
+const isLarge = (dimensions: { width: number; height: number }) => {
+  return dimensions.width + dimensions.height > 2047;
+};
 
 const unOptimized = (file: ImageFile) => {
   // if the high confidence tags are empty, then return true

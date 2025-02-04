@@ -56,9 +56,8 @@ yarn dev --host
   - [x] Delete Image
   - Cropping
     - [x] Cropping tool
-    - [x] Fixed aspect ratios {1:1, 16:9, 9:16}
-    - [x] Letter-boxing {1:1}
-    - [x] Letter-boxing {16:9, 9:16}
+    - [x] Fixed aspect ratios {1:1, 4:3, 3:4}
+    - [x] Letter-boxing {1:1, 4:3, 3:4}
     - [ ] remove background
 - Tagging
   - [x] Image auto-tagging

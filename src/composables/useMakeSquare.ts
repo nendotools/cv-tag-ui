@@ -17,14 +17,13 @@ export const useMakeSquare = () => {
     const img = new Image();
     img.onload = () => {
       const size = Math.max(img.width, img.height);
-      // determine if nearest square-ish size is 1:1, 16:9 or 9:16
       const ratio = img.width / img.height;
       if (ratio > 1.2) {
-        // 16:9 -> should be size width and expand height to size at ratio 16:9
+        // 4:3
         canvas.width = size;
         canvas.height = Math.round(size * 0.75);
       } else if (ratio < 0.8) {
-        // 9:16
+        // 3:4
         canvas.height = size;
         canvas.width = Math.round(size * 0.75);
       } else {

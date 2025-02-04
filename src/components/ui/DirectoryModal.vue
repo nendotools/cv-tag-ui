@@ -1,5 +1,5 @@
 <template>
-  <UModal :ui="{container: 'items-center' }">
+  <UModal :ui="{ container: 'items-center' }">
     <UCard
       :ui="{
         ring: '',
@@ -27,87 +27,128 @@
           option-attribute="id"
           :search-attributes="['id']"
           :popper="{
-              placement: 'top-end',
+            placement: 'top-end',
           }"
           v-model="current"
           @input="onInput"
         />
         <div class="w-full flex flex-row justify-end gap-2">
-        <UButton v-if="kohyaParent && refocusing" color="emerald" :loading="loading" :disabled="loading" @click="onSaveParent">
-          Use Parent
-        </UButton>
-        <UButton v-if="refocusing" :loading="loading" :disabled="loading" @click="onSaveCurrent">
-          Use Current
-        </UButton>
+          <UButton
+            v-if="kohyaParent && refocusing"
+            color="emerald"
+            :loading="loading"
+            :disabled="loading"
+            @click="onSaveParent"
+          >
+            Use Parent
+          </UButton>
+          <UButton
+            v-if="refocusing"
+            :loading="loading"
+            :disabled="loading"
+            @click="onSaveCurrent"
+          >
+            Use Current
+          </UButton>
         </div>
       </div>
       <div v-if="subdirectories" class="flex flex-col gap-2 mt-4">
-        <div v-for="opt, index in directoryStore.subDirectories" :key="index" class="w-full grid grid-cols-5 gap-2 items-center">
+        <div
+          v-for="(opt, index) in directoryStore.subDirectories"
+          :key="index"
+          class="w-full grid grid-cols-5 gap-2 items-center"
+        >
           <div class="col-span-2 flex flex-row gap-1 align-enter">
-          <UButton color="rose" size="xs" icon="fluent:delete-20-regular" :disabled="isActive(opt)" @click="onRemove(opt)"/>
-          <UButton
-            class="flex-1"
-            :icon="folderIcon(opt)"
-            :color="isActive(opt) ? 'emerald' : 'gray'"
-            @click="directoryStore.activeDirectory = opt.name" >
-            {{ opt.name }}
-          </UButton>
+            <UButton
+              color="rose"
+              size="xs"
+              icon="fluent:delete-20-regular"
+              :disabled="isActive(opt)"
+              @click="onRemove(opt)"
+            />
+            <UButton
+              class="flex-1"
+              :icon="folderIcon(opt)"
+              :color="isActive(opt) ? 'emerald' : 'gray'"
+              @click="setActive(opt.name)"
+            >
+              {{ opt.name }}
+            </UButton>
           </div>
           <UBadge
             class="w-full select-none"
-            :variant="isActive(opt) ? 'subtle' : 'solid'" 
+            :variant="isActive(opt) ? 'subtle' : 'solid'"
             :color="isActive(opt) ? 'emerald' : 'gray'"
-            icon="fluent:image-20-regular">
+            icon="fluent:image-20-regular"
+          >
             {{ opt.images }}
           </UBadge>
           <UTooltip
             text="TXT Tag Files"
             :popper="{ arrow: true, placement: 'top' }"
           >
-          <UBadge
-            class="w-full select-none"
-            :variant="isActive(opt) ? 'subtle' : 'solid'" 
-            :color="isActive(opt) ? 'emerald' : 'gray'"
-            icon="fluent:tag-20-regular">
-            {{ opt.tags }}
-          </UBadge>
+            <UBadge
+              class="w-full select-none"
+              :variant="isActive(opt) ? 'subtle' : 'solid'"
+              :color="isActive(opt) ? 'emerald' : 'gray'"
+              icon="fluent:tag-20-regular"
+            >
+              {{ opt.tags }}
+            </UBadge>
           </UTooltip>
           <UTooltip
-            text="Cached Inferrence Results" 
+            text="Cached Inferrence Results"
             :popper="{ arrow: true, placement: 'top' }"
           >
-          <UBadge
-            class="w-full select-none"
-            :variant="isActive(opt) ? 'subtle' : 'solid'" 
-            :color="isActive(opt) ? 'emerald' : 'gray'"
-            icon="fluent:book-database-20-regular">
-            {{ opt.scans }}
-          </UBadge>
+            <UBadge
+              class="w-full select-none"
+              :variant="isActive(opt) ? 'subtle' : 'solid'"
+              :color="isActive(opt) ? 'emerald' : 'gray'"
+              icon="fluent:book-database-20-regular"
+            >
+              {{ opt.scans }}
+            </UBadge>
           </UTooltip>
         </div>
-        <div v-if="subdirectories && !showCreate" class="tw-full grid grid-cols-5 gap-2 items-center">
-          <UButton class="col-span-2" icon="fluent:folder-add-20-regular" @click="startCreate">
+        <div
+          v-if="subdirectories && !showCreate"
+          class="tw-full grid grid-cols-5 gap-2 items-center"
+        >
+          <UButton
+            class="col-span-2"
+            icon="fluent:folder-add-20-regular"
+            @click="startCreate"
+          >
             Create Directory
           </UButton>
         </div>
-        <div v-if="subdirectories && showCreate" class="tw-full grid grid-cols-5 gap-2 items-center">
-          <UButton icon="fluent:folder-prohibited-20-regular" color="rose" @click="cancelCreate">
+        <div
+          v-if="subdirectories && showCreate"
+          class="tw-full grid grid-cols-5 gap-2 items-center"
+        >
+          <UButton
+            icon="fluent:folder-prohibited-20-regular"
+            color="rose"
+            @click="cancelCreate"
+          >
             Cancel
           </UButton>
           <UButton icon="fluent:folder-add-20-regular" @click="saveCreate">
             Create
           </UButton>
-          <UInput 
+          <UInput
             class="col-span-3"
             placeholder="New Directory Name"
             v-model="newDirname"
-            @input="validateName">
+            @input="validateName"
+          >
             <template #trailing>
               <UBadge
-              v-if="isKohya"
+                v-if="isKohya"
                 :color="isValidTarget ? 'emerald' : 'rose'"
                 :variant="isValidTarget ? 'subtle' : 'solid'"
-                icon="fluent:tag-20-regular">
+                icon="fluent:tag-20-regular"
+              >
                 {{ kohyaTarget }}
               </UBadge>
               <div v-else></div>
@@ -118,9 +159,7 @@
 
       <template #footer>
         <div class="flex justify-end gap-4">
-          <UButton @click="onSave">
-            Save
-          </UButton>
+          <UButton @click="onSave"> Save </UButton>
         </div>
       </template>
     </UCard>
@@ -149,7 +188,7 @@ onMounted(() => {
   current.value = directoryStore.baseDirectory;
   updateDirectoryList(parentDir.value);
 
-  if(directoryStore.relatedDirectories.length) {
+  if (directoryStore.relatedDirectories.length) {
     directoryStore.scanDirectories();
   }
 });
@@ -174,22 +213,22 @@ const cancelCreate = () => {
   isKohya.value = false;
 };
 const saveCreate = async () => {
-    await directoryStore.createDirectory(newDirname.value);
-    showCreate.value = false;
-    kohyaTarget.value = "";
-    newDirname.value = "";
-    isKohya.value = false;
+  await directoryStore.createDirectory(newDirname.value);
+  showCreate.value = false;
+  kohyaTarget.value = "";
+  newDirname.value = "";
+  isKohya.value = false;
 };
 const validateName = (e: Event) => {
   const target = e.target as HTMLInputElement;
   isKohya.value = KOHYA_FOLDER_PATTERN.test(target.value);
-  if(isKohya.value) {
+  if (isKohya.value) {
     kohyaTarget.value = target.value.split(" ")[1];
   }
 };
 
 const current = ref<string>("");
-const options = ref<{id:string, label:string}[]>([]);
+const options = ref<{ id: string; label: string }[]>([]);
 const loading = ref(false);
 
 const subdirectories = computed(() => {
@@ -198,10 +237,14 @@ const subdirectories = computed(() => {
 const refocusing = computed(() => {
   return current.value !== directoryStore.baseDirectory;
 });
-const parentDir = computed(() => current.value.split("/").slice(0, -1).join("/"));
+const parentDir = computed(() =>
+  current.value.split("/").slice(0, -1).join("/"),
+);
 const kohyaParent = computed(() => {
   if (!options.value.length) return false;
-  return options.value.some((opt) => KOHYA_FOLDER_PATTERN.test(opt.id.split("/").pop() || ""));
+  return options.value.some((opt) =>
+    KOHYA_FOLDER_PATTERN.test(opt.id.split("/").pop() || ""),
+  );
 });
 
 const updateDirectoryList = async (targetDir: string) => {
@@ -209,10 +252,10 @@ const updateDirectoryList = async (targetDir: string) => {
   // and update the options
   if (targetDir === "") targetDir = "/";
   directoryStore.fetchDirectories(targetDir).then((res: string[]) => {
-    const opts:{id:string, label:string}[] = [];
+    const opts: { id: string; label: string }[] = [];
     res.forEach((inner) => {
       opts.push({
-        id: `${targetDir === "/"?"":targetDir}/${inner}`,
+        id: `${targetDir === "/" ? "" : targetDir}/${inner}`,
         label: inner,
       });
     });
@@ -227,6 +270,11 @@ const onInput = (e: Event) => {
   if (target.value.endsWith("/")) {
     updateDirectoryList(target.value.slice(0, -1));
   }
+};
+
+const setActive = (dirname: string) => {
+  directoryStore.activeDirectory = dirname;
+  store("activeDirectory", dirname);
 };
 
 const onSave = async () => {
@@ -244,7 +292,7 @@ const onSaveCurrent = async () => {
 const onSaveParent = async () => {
   loading.value = true;
   options.value = [];
-  current.value = current.value.slice(0, current.value.lastIndexOf('/'))
+  current.value = current.value.slice(0, current.value.lastIndexOf("/"));
   updateDirectoryList(parentDir.value);
   await directoryStore.setDirectory(current.value, true);
   store("directory", current.value);
@@ -260,9 +308,13 @@ const isActive = (dir: ImageDirectory) => {
 };
 
 const folderIcon = (dir: ImageDirectory) => {
-  const activeState = isActive(dir) ? 'filled' : 'regular';
-  const scanState = loader.isLoading(`${Prefixes.DIRSCAN}${dir.name}`) ? '-search' : loader.isQueued(`${Prefixes.DIRSCAN}${dir.name}`) ? '-sync' : '';
-  const icon = `fluent:folder${scanState }-20-${activeState}`;
+  const activeState = isActive(dir) ? "filled" : "regular";
+  const scanState = loader.isLoading(`${Prefixes.DIRSCAN}${dir.name}`)
+    ? "-search"
+    : loader.isQueued(`${Prefixes.DIRSCAN}${dir.name}`)
+      ? "-sync"
+      : "";
+  const icon = `fluent:folder${scanState}-20-${activeState}`;
   return icon;
 };
 </script>
