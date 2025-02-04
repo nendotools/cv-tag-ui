@@ -42,6 +42,20 @@ export const useFiles = defineStore("files", {
   }),
 
   getters: {
+    imageDuplicateTags(state: State) {
+      const duplicates: Record<string, string[]> = {};
+
+      for (const file of state.files) {
+        const words = file.highConfidenceTags
+          .join(" ")
+          .split(" ")
+          .map((word) => word.toLowerCase());
+        duplicates[file.hash] = words.filter(
+          (word, index) => words.indexOf(word) !== index,
+        );
+      }
+      return duplicates;
+    },
     knownTags(state: State) {
       return Array.from(
         state.files.reduce((acc: Set<string>, file: ImageFile) => {

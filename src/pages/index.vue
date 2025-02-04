@@ -86,7 +86,7 @@
         >
           <!-- Image and Image tools -->
           <div
-            class="relative flex flex-col items-center justify-center overflow-hidden col-span-1"
+            class="relative flex flex-col items-center justify-center overflow-hidden col-span-2"
           >
             <img
               :src="file.resource"
@@ -96,10 +96,16 @@
 
           <!-- File Details -->
           <div
-            class="flex flex-col self-start ml-4 landscape:col-start-2 landscape:col-span-3 gap-2"
+            class="flex flex-col self-start ml-4 landscape:col-start-3 landscape:col-end-6 gap-2"
           >
             <p class="text-sm font-semibold">{{ file.name }}</p>
             <p class="text-xs text-gray-500">{{ file.path }}</p>
+            <p class="text-xs text-gray-500">
+              {{ file.dimensions.width }} x {{ file.dimensions.height }}
+            </p>
+            <p class="text-xs text-gray-500">
+              Optimized Tags: {{ unOptimized(file) }}
+            </p>
             <div>
               <UHorizontalNavigation
                 :links="[
@@ -194,13 +200,12 @@
                 class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4"
               >
                 <ATag
-                  v-for="tag in file.highConfidenceTags.length
-                    ? file.highConfidenceTags
-                    : file.tags"
+                  v-for="tag in [...file?.highConfidenceTags]"
                   :key="tag"
                   :label="tag"
                   :exists="true"
                   :simple="mode !== 'tag'"
+                  :duplicates="imageDuplicateTags[file.hash]"
                   :class="{ 'cursor-pointer': mode === 'view' }"
                   @delete="fileStore.removeTag(file, [tag])"
                   @click.stop="setFocusTag(tag)"
@@ -292,8 +297,6 @@
               </div>
             </div>
           </div>
-
-          <SendMenu :file="file" />
         </div>
       </UCard>
     </div>
@@ -460,7 +463,7 @@ const directoryStore = useDirectory();
 
 import { useFiles } from "@/pinia/files";
 const fileStore = useFiles();
-const { visibleFiles } = storeToRefs(fileStore);
+const { visibleFiles, imageDuplicateTags } = storeToRefs(fileStore);
 
 import { useMakeSquare } from "~/composables/useMakeSquare";
 import OptionsSlideover from "~/components/ui/OptionsSlideover.vue";
@@ -543,6 +546,18 @@ const isSquare = (file: ImageFile) =>
   file.dimensions.width === file.dimensions.height ||
   (file.dimensions.width / file.dimensions.height).toFixed(2) === "0.75" ||
   (file.dimensions.width / file.dimensions.height).toFixed(2) === "1.33";
+
+const unOptimized = (file: ImageFile) => {
+  // if the high confidence tags are empty, then return true
+  if (!file.highConfidenceTags.length) return true;
+
+  // if the high confidence tags are not empty, then return true if the tags include no duplicate words in all tags
+  const words = file.highConfidenceTags
+    .join(" ")
+    .split(" ")
+    .map((word) => word.toLowerCase());
+  return new Set(words).size === words.length;
+};
 
 const deleteFile = (file: ImageFile) => {
   fileStore.deleteFile(file.path);
