@@ -44,13 +44,13 @@ yarn dev --host
   - [ ] Handle multiple connected clients (prevent stacking tagging requests)
   - [ ] Image grid layout
   - [x] Image sorting
-  - [ ] Image filtering
+  - [x] Image filtering
   - [ ] Recent Project menu
 - Images
   - [x] Image upload
   - [x] Image cropping
   - [x] Image letter-boxing
-  - [ ] Filter images by tag
+  - [x] Filter images by tag
   - [x] Copy Image
   - [x] Move Image
   - [x] Delete Image
@@ -58,7 +58,7 @@ yarn dev --host
     - [x] Cropping tool
     - [x] Fixed aspect ratios {1:1, 16:9, 9:16}
     - [x] Letter-boxing {1:1}
-    - [ ] Letter-boxing {16:9, 9:16}
+    - [x] Letter-boxing {16:9, 9:16}
     - [ ] remove background
 - Tagging
   - [x] Image auto-tagging
