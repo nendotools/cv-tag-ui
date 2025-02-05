@@ -5,12 +5,9 @@
     >
       <!-- Image and Image tools -->
       <div
-        class="relative flex flex-col items-center justify-center overflow-hidden col-span-2"
+        class="relative flex flex-col items-stretch justify-center overflow-hidden col-span-2"
       >
-        <img
-          :src="file.resource"
-          style="height: 100%; width: 100%; object-fit: contain"
-        />
+        <img :src="file.resource" />
       </div>
 
       <!-- File Details -->
@@ -26,35 +23,7 @@
               {{ file.dimensions.width }} x {{ file.dimensions.height }}
             </span>
           </div>
-          <div class="icon-stack relative h-5 w-6 -bottom-1 scale-50">
-            <div
-              class="w-8 h-8 left-0 bottom-0 absolute"
-              :class="[
-                ...orientationCSSClasses,
-                orientation === Orientation.SQUARE
-                  ? activeOrientationCSSClasses
-                  : inactiveOrientationCSSClasses,
-              ]"
-            />
-            <div
-              class="w-10 h-6 left-0 bottom-0 absolute"
-              :class="[
-                ...orientationCSSClasses,
-                orientation === Orientation.LANDSCAPE
-                  ? activeOrientationCSSClasses
-                  : inactiveOrientationCSSClasses,
-              ]"
-            />
-            <div
-              class="w-6 h-10 left-0 bottom-0 absolute"
-              :class="[
-                ...orientationCSSClasses,
-                orientation === Orientation.PORTRAIT
-                  ? activeOrientationCSSClasses
-                  : inactiveOrientationCSSClasses,
-              ]"
-            />
-          </div>
+          <OrientationDisplay :dimensions="file.dimensions" />
         </div>
         <div>
           <UHorizontalNavigation
@@ -253,6 +222,7 @@ import { useLoaders, Prefixes } from "~/pinia/loaders";
 const loaders = useLoaders();
 
 import { useFiles } from "@/pinia/files";
+import OrientationDisplay from "./OrientationDisplay.vue";
 const fileStore = useFiles();
 
 const { imageDuplicateTags } = storeToRefs(fileStore);
@@ -317,17 +287,4 @@ const sizeColor = computed(() => {
     bg: "bg-zinc-500/10",
   };
 });
-const enum Orientation {
-  SQUARE = "square",
-  PORTRAIT = "portrait",
-  LANDSCAPE = "landscape",
-}
-const orientation = computed(() => {
-  if (isLandscape(props.file)) return Orientation.LANDSCAPE;
-  if (isPortrait(props.file)) return Orientation.PORTRAIT;
-  return Orientation.SQUARE;
-});
-const orientationCSSClasses = ["border-2", "rounded-md"];
-const activeOrientationCSSClasses = ["z-10", sizeColor.value.border];
-const inactiveOrientationCSSClasses = ["z-1 opacity-15"];
 </script>

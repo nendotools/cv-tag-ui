@@ -55,16 +55,21 @@ export const useMakeSquare = () => {
     img.src = image.resource;
   };
 
+  interface Dimensions {
+    width: number;
+    height: number;
+  }
+
   // valid square ratios should either 1:1, 3:4, or 4:3
   const isSquare = (file: ImageFile) =>
     file.dimensions.width === file.dimensions.height ||
     (file.dimensions.width / file.dimensions.height).toFixed(2) === "0.75" ||
     (file.dimensions.width / file.dimensions.height).toFixed(2) === "1.33";
 
-  const isPortrait = (file: ImageFile) =>
-    file.dimensions.width < file.dimensions.height;
-  const isLandscape = (file: ImageFile) =>
-    file.dimensions.width > file.dimensions.height;
+  const isPortrait = (dimensions: Dimensions) =>
+    dimensions.width < dimensions.height;
+  const isLandscape = (dimensions: Dimensions) =>
+    dimensions.width > dimensions.height;
 
   const isSmall = (dimensions: { width: number; height: number }) => {
     return dimensions.width + dimensions.height < 513;
