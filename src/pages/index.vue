@@ -80,231 +80,16 @@
       ref="media-list"
       class="h-dvh flex flex-col justify-start items-stretch p-8 gap-4 overflow-y-auto pb-48"
     >
-      <UCard v-for="file in visibleFiles" :key="file.name">
-        <div
-          class="grid items-center landscape:grid-cols-5 portrait:grid-cols-1 grid-rows-auto"
-        >
-          <!-- Image and Image tools -->
-          <div
-            class="relative flex flex-col items-center justify-center overflow-hidden col-span-2"
-          >
-            <img
-              :src="file.resource"
-              style="height: 100%; width: 100%; object-fit: contain"
-            />
-          </div>
-
-          <!-- File Details -->
-          <div
-            class="flex flex-col self-start ml-4 landscape:col-start-3 landscape:col-end-6 gap-2"
-          >
-            <p class="text-sm font-semibold">{{ file.name }}</p>
-            <p class="text-xs text-gray-500">{{ file.path }}</p>
-            <p class="text-xs">
-              Dimensions:
-              <span
-                :class="{
-                  'text-rose-500': isSmall(file.dimensions),
-                  'text-amber-500': isMedium(file.dimensions),
-                  'text-emerald-500': isLarge(file.dimensions),
-                }"
-              >
-                {{ file.dimensions.width }} x {{ file.dimensions.height }}
-              </span>
-            </p>
-            <div>
-              <UHorizontalNavigation
-                :links="[
-                  {
-                    label: 'Rank',
-                    icon: 'fluent:crown-20-filled',
-                    badge: {
-                      label:
-                        ((file?.confidenceScore || 0) * 100).toFixed(1) + '%',
-                      color: 'amber',
-                      variant: 'soft',
-                    },
-                    active: getTagOptCache(file.name) === OptCategories.RANK,
-                    click: () => setMenuOptCache(file.name, OptCategories.RANK),
-                  },
-                  {
-                    label: 'Applied Tags',
-                    icon: 'fluent:tag-multiple-16-filled',
-                    badge: {
-                      label: file.highConfidenceTags.length,
-                      color: 'emerald',
-                      variant: 'soft',
-                    },
-                    active:
-                      getTagOptCache(file.name) === OptCategories.ASSIGNED,
-                    click: () =>
-                      setMenuOptCache(file.name, OptCategories.ASSIGNED),
-                  },
-                  {
-                    label: 'Excluded Tags',
-                    icon: 'fluent:tag-multiple-16-regular',
-                    badge: {
-                      label: file.lowConfidenceTags.length,
-                      color: 'rose',
-                      variant: 'soft',
-                    },
-                    active:
-                      getTagOptCache(file.name) === OptCategories.EXCLUDED,
-                    click: () =>
-                      setMenuOptCache(file.name, OptCategories.EXCLUDED),
-                  },
-                  {
-                    label: 'Tools',
-                    icon: 'fluent:developer-board-lightning-toolbox-20-regular',
-                    active: getTagOptCache(file.name) === OptCategories.TOOLS,
-                    click: () =>
-                      setMenuOptCache(file.name, OptCategories.TOOLS),
-                  },
-                  {
-                    label: 'Scan',
-                    avatar: {
-                      icon:
-                        loaders.hasActiveLoaders(
-                          Prefixes.ANALYZE + file.name,
-                        ) ||
-                        loaders.hasQueuedLoaders(Prefixes.ANALYZE + file.name)
-                          ? 'fluent:tag-search-20-filled'
-                          : 'fluent:tag-search-20-regular',
-                      chipColor: loaders.hasQueuedLoaders(
-                        Prefixes.ANALYZE + file.name,
-                      )
-                        ? 'amber'
-                        : loaders.hasActiveLoaders(Prefixes.ANALYZE + file.name)
-                          ? 'rose'
-                          : undefined,
-                    },
-                    disabled:
-                      [...file.highConfidenceTags, ...file.lowConfidenceTags]
-                        .length > 0,
-                    click: () => fileStore.analyzeImage(file),
-                  },
-                ]"
-              />
-              <div
-                v-show="getTagOptCache(file.name) === OptCategories.RANK"
-                class="ml-4 flex flex-col gap-2 m-4"
-              >
-                <ATag
-                  v-for="(score, tag) in file.confidenceKeys"
-                  :key="tag"
-                  :label="`${tag} (${(score * 100).toFixed(1)}%)`"
-                  :exists="true"
-                  :simple="true"
-                />
-
-                <div v-if="!file.tags.length && !file?.confidenceKeys?.length">
-                  <p class="text-zinc-50/25">None</p>
-                </div>
-              </div>
-              <div
-                v-show="getTagOptCache(file.name) === OptCategories.ASSIGNED"
-                class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4"
-              >
-                <ATag
-                  v-for="tag in [...file?.highConfidenceTags]"
-                  :key="tag"
-                  :label="tag"
-                  :exists="true"
-                  :simple="mode !== 'tag'"
-                  :duplicates="imageDuplicateTags[file.hash]"
-                  :class="{ 'cursor-pointer': mode === 'view' }"
-                  @delete="fileStore.removeTag(file, [tag])"
-                  @click.stop="setFocusTag(tag)"
-                />
-
-                <div
-                  v-if="!file.tags.length && !file?.highConfidenceTags?.length"
-                >
-                  <p class="text-zinc-50/25">None</p>
-                </div>
-
-                <div class="col-start-1 col-span-full flex flex-row gap-2 mt-4">
-                  <h4>Add Tags</h4>
-                  <TagInput
-                    :tags="file.highConfidenceTags"
-                    @add="(tag: string) => fileStore.addTag(file, [tag])"
-                  />
-                </div>
-              </div>
-              <div
-                v-show="getTagOptCache(file.name) === OptCategories.EXCLUDED"
-                class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4"
-              >
-                <ATag
-                  v-for="tag in [...file?.lowConfidenceTags]"
-                  :key="tag"
-                  :label="tag"
-                  :exists="false"
-                  :simple="mode !== 'tag'"
-                  :class="{ 'cursor-pointer': mode === 'view' }"
-                  @add="fileStore.addTag(file, [tag])"
-                  @click.stop="setFocusTag(tag)"
-                />
-
-                <div v-if="!file?.lowConfidenceTags?.length">
-                  <p class="text-zinc-50/25">None</p>
-                </div>
-              </div>
-              <div
-                v-show="getTagOptCache(file.name) === OptCategories.TOOLS"
-                class="ml-4 grid grid-flow-col grid-rows-5 grid-cols-3 gap-2 m-4"
-              >
-                <UButton
-                  icon="fluent:image-search-20-regular"
-                  color="primary"
-                  class="rounded-full p-2"
-                  variant="solid"
-                  size="xs"
-                  :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
-                  :disabled="
-                    loaders.isLoading(Prefixes.ANALYZE + file.name) ||
-                    loaders.isQueued(Prefixes.ANALYZE + file.name)
-                  "
-                  @click="fileStore.analyzeImage(file)"
-                >
-                  Analyze Image
-                </UButton>
-                <UButton
-                  icon="fluent:color-background-20-regular"
-                  :color="isSquare(file) ? 'white' : 'emerald'"
-                  class="rounded-full p-2"
-                  variant="solid"
-                  size="xs"
-                  :disabled="isSquare(file)"
-                  @click="attemptMakeSquare(file)"
-                >
-                  Make Square
-                </UButton>
-                <UButton
-                  icon="fluent:crop-16-regular"
-                  color="emerald"
-                  class="rounded-full p-2"
-                  variant="solid"
-                  size="xs"
-                  @click="cropTarget = file"
-                >
-                  Crop Image
-                </UButton>
-                <UButton
-                  icon="fluent:delete-16-regular"
-                  color="red"
-                  class="rounded-full p-2"
-                  variant="solid"
-                  size="xs"
-                  @click="deleteFile(file)"
-                >
-                  Delete Image
-                </UButton>
-              </div>
-            </div>
-          </div>
-        </div>
-      </UCard>
+      <ImageCard
+        v-for="file in visibleFiles"
+        :key="file.name"
+        :mode="mode"
+        :file="file"
+        @make-square="attemptMakeSquare"
+        @set-focus-tag="setFocusTag"
+        @crop-file="cropTarget = file"
+        @delete-file="deleteFile(file)"
+      />
     </div>
   </div>
 
@@ -448,7 +233,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 
-import ATag from "~/components/ui/ATag.vue";
+import ImageCard from "~/components/ui/ImageCard.vue";
 import AHeader from "~/components/ui/AHeader.vue";
 import CropModal from "~/components/ui/CropModal.vue";
 import TagPreviewer from "~/components/ui/TagPreviewer.vue";
@@ -468,29 +253,15 @@ const directoryStore = useDirectory();
 
 import { useFiles } from "@/pinia/files";
 const fileStore = useFiles();
-const { visibleFiles, imageDuplicateTags } = storeToRefs(fileStore);
+const { visibleFiles } = storeToRefs(fileStore);
 
 import { useMakeSquare } from "~/composables/useMakeSquare";
 import OptionsSlideover from "~/components/ui/OptionsSlideover.vue";
-import TagInput from "~/components/ui/TagInput.vue";
-const { makeSquare } = useMakeSquare();
+const { makeSquare, isSquare } = useMakeSquare();
 
 const mediaRef = useTemplateRef("media-list");
 
 const mode = ref<"view" | "tag">("view");
-enum OptCategories {
-  RANK = "rank",
-  ASSIGNED = "assigned",
-  EXCLUDED = "excluded",
-  TOOLS = "tools",
-}
-const tagOptCache = ref<Record<string, OptCategories>>({});
-const setMenuOptCache = (tag: string, value: OptCategories) => {
-  tagOptCache.value[tag] = value;
-};
-const getTagOptCache = (tag: string) =>
-  tagOptCache.value[tag] || OptCategories.ASSIGNED;
-
 const cropTarget = ref<ImageFile | null>(null);
 const closeCropModal = () => {
   cropTarget.value = null;
@@ -552,35 +323,6 @@ onMounted(async () => {
   animateRotation();
 });
 
-// valid square ratios should either 1:1, 3:4, or 4:3
-const isSquare = (file: ImageFile) =>
-  file.dimensions.width === file.dimensions.height ||
-  (file.dimensions.width / file.dimensions.height).toFixed(2) === "0.75" ||
-  (file.dimensions.width / file.dimensions.height).toFixed(2) === "1.33";
-
-const isSmall = (dimensions: { width: number; height: number }) => {
-  return dimensions.width + dimensions.height < 513;
-};
-
-const isMedium = (dimensions: { width: number; height: number }) => {
-  return dimensions.width + dimensions.height < 2048;
-};
-
-const isLarge = (dimensions: { width: number; height: number }) => {
-  return dimensions.width + dimensions.height > 2047;
-};
-
-const unOptimized = (file: ImageFile) => {
-  // if the high confidence tags are empty, then return true
-  if (!file.highConfidenceTags.length) return true;
-
-  // if the high confidence tags are not empty, then return true if the tags include no duplicate words in all tags
-  const words = file.highConfidenceTags
-    .map((word) => (word.split(" ").pop() || "").toLowerCase())
-    .filter((word) => word.length > 0);
-  return new Set(words).size === words.length;
-};
-
 const deleteFile = (file: ImageFile) => {
   fileStore.deleteFile(file.path);
 };
@@ -608,7 +350,6 @@ const makeAllSquare = async () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
-  console.log("done");
   stopAnimation();
 };
 

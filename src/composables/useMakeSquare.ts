@@ -55,5 +55,36 @@ export const useMakeSquare = () => {
     img.src = image.resource;
   };
 
-  return { makeSquare };
+  // valid square ratios should either 1:1, 3:4, or 4:3
+  const isSquare = (file: ImageFile) =>
+    file.dimensions.width === file.dimensions.height ||
+    (file.dimensions.width / file.dimensions.height).toFixed(2) === "0.75" ||
+    (file.dimensions.width / file.dimensions.height).toFixed(2) === "1.33";
+
+  const isPortrait = (file: ImageFile) =>
+    file.dimensions.width < file.dimensions.height;
+  const isLandscape = (file: ImageFile) =>
+    file.dimensions.width > file.dimensions.height;
+
+  const isSmall = (dimensions: { width: number; height: number }) => {
+    return dimensions.width + dimensions.height < 513;
+  };
+
+  const isMedium = (dimensions: { width: number; height: number }) => {
+    return dimensions.width + dimensions.height < 2048;
+  };
+
+  const isLarge = (dimensions: { width: number; height: number }) => {
+    return dimensions.width + dimensions.height > 2047;
+  };
+
+  return {
+    makeSquare,
+    isLarge,
+    isMedium,
+    isSmall,
+    isSquare,
+    isPortrait,
+    isLandscape,
+  };
 };
