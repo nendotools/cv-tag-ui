@@ -173,6 +173,17 @@
               Analyze Image
             </UButton>
             <UButton
+              icon="fluent:image-search-20-regular"
+              color="primary"
+              class="rounded-full p-2"
+              variant="solid"
+              size="xs"
+              :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
+              @click="attemptMergeTags"
+            >
+              Merge Tags
+            </UButton>
+            <UButton
               icon="fluent:color-background-20-regular"
               :color="isSquare(file) ? 'white' : 'emerald'"
               class="rounded-full p-2"
@@ -218,6 +229,9 @@ import { useMakeSquare } from "~/composables/useMakeSquare";
 const { isSquare, isSmall, isMedium, isLarge, isPortrait, isLandscape } =
   useMakeSquare();
 
+import { useTagMerger } from "#build/imports";
+const { mergeTags } = useTagMerger();
+
 import { useLoaders, Prefixes } from "~/pinia/loaders";
 const loaders = useLoaders();
 
@@ -250,6 +264,11 @@ const setMenuOptCache = (tag: string, value: OptCategories) => {
 };
 const getTagOptCache = (tag: string) =>
   tagOptCache.value[tag] || OptCategories.ASSIGNED;
+
+const attemptMergeTags = () => {
+  const tags = mergeTags(props.file.highConfidenceTags);
+  console.log(tags);
+};
 
 const unOptimized = (file: ImageFile) => {
   // if the high confidence tags are empty, then return true
