@@ -1,12 +1,22 @@
 export const useTagMerger = () => {
   const rootTags: string[] = [
+    "sky",
+    "hairband",
     "pubic hair",
     "hair",
+    "hair bun",
+    "braids",
+    "braid",
     "eyes",
+    "smile",
     "mouth",
+    "lips",
     "nose",
     "ears",
+    "legs",
     "breasts",
+    "choker",
+    "ribbon",
     "shirt",
     "skirt",
     "shorts",
@@ -14,20 +24,28 @@ export const useTagMerger = () => {
     "bra",
     "panties",
     "socks",
+    "thighhighs",
     "shoes",
+    "footwear",
+    "heels",
     "dress",
     "swimsuit",
     "bikini",
     "lingerie",
     "gloves",
     "hat",
+    "hoodie",
     "coat",
+    "vest",
+    "uniform",
     "jacket",
     "sweater",
     "sweatshirt",
     "sweatpants",
     "sweatshorts",
     "clothes",
+    "camisole",
+    "bow",
     "necklace",
     "earrings",
     "bracelet",
@@ -42,13 +60,10 @@ export const useTagMerger = () => {
     "piercing",
     "cameltoe",
     "camera",
+    "background",
+    "inset",
   ];
 
-  // Need a way to merge tags based on the last word/words.
-  // It should accept a list of tags and return a list of tags {newTags: string[], removedTags: string[]}
-  // If the last word of a tag is in the rootTags, it should be added to a merged tag (e.g. "blue eyes" -> {'eyes': 'blue'}, "large eyes" => {'eyes': 'large blue'})
-  // after merging, the tag should be removed from the list of tags
-  // If a tag exactly matches a rootTag, it should be removed from the list of tags and added to the merged tag if not present already (e.g. {"eyes": ''})
   const mergeTags = (
     tags: string[],
   ): { newTags: string[]; removedTags: string[] } => {
@@ -76,7 +91,6 @@ export const useTagMerger = () => {
       newTags.push(`${mergedTags[word]} ${word}`.trim());
     }
 
-    // remove tags that are in both removedTags and newTags
     const sharedTags = removedTags.filter((tag) => newTags.includes(tag));
     return {
       newTags: [...newTags.filter((t) => !sharedTags.includes(t))],

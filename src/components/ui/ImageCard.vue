@@ -155,65 +155,95 @@
           </div>
           <div
             v-show="getTagOptCache(file.name) === OptCategories.TOOLS"
-            class="ml-4 grid grid-flow-col grid-rows-5 grid-cols-3 gap-2 m-4"
+            class="ml-4 grid grid-rows-1 grid-cols-4 gap-2 m-4"
           >
-            <UButton
-              icon="fluent:image-search-20-regular"
-              color="primary"
-              class="rounded-full p-2"
-              variant="solid"
-              size="xs"
-              :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
-              :disabled="
-                loaders.isLoading(Prefixes.ANALYZE + file.name) ||
-                loaders.isQueued(Prefixes.ANALYZE + file.name)
+            <div
+              v-if="
+                file?.highConfidenceTags.length &&
+                !loaders.isLoading(Prefixes.TAGMERGE + file.name)
               "
-              @click="fileStore.analyzeImage(file)"
+              class="grid grid-cols-5 grid-rows-5 col-span-3 gap-2"
             >
-              Analyze Image
-            </UButton>
-            <UButton
-              icon="fluent:image-search-20-regular"
-              color="primary"
-              class="rounded-full p-2"
-              variant="solid"
-              size="xs"
-              :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
-              @click="attemptMergeTags"
+              <ATag
+                v-for="tag in [...file?.highConfidenceTags]"
+                :key="tag"
+                :label="tag"
+                :exists="true"
+                :simple="mode !== 'tag'"
+                :duplicates="imageDuplicateTags[file.hash]"
+                :class="{ 'cursor-pointer': mode === 'view' }"
+                @delete="fileStore.removeTag(file, [tag])"
+                @click.stop="$emit('set-focus-tag', tag)"
+              />
+            </div>
+            <div
+              v-if="
+                file?.highConfidenceTags.length &&
+                loaders.isLoading(Prefixes.TAGMERGE + file.name)
+              "
+              class="grid grid-cols-1 grid-rows-1 col-span-3 gap-2"
             >
-              Merge Tags
-            </UButton>
-            <UButton
-              icon="fluent:color-background-20-regular"
-              :color="isSquare(file) ? 'white' : 'emerald'"
-              class="rounded-full p-2"
-              variant="solid"
-              size="xs"
-              :disabled="isSquare(file)"
-              @click="$emit('make-square', file)"
-            >
-              Make Square
-            </UButton>
-            <UButton
-              icon="fluent:crop-16-regular"
-              color="emerald"
-              class="rounded-full p-2"
-              variant="solid"
-              size="xs"
-              @click="$emit('crop-file', file)"
-            >
-              Crop Image
-            </UButton>
-            <UButton
-              icon="fluent:delete-16-regular"
-              color="red"
-              class="rounded-full p-2"
-              variant="solid"
-              size="xs"
-              @click="$emit('delete-file', file)"
-            >
-              Delete Image
-            </UButton>
+              <p class="text-zinc-50/25">Merging Tags...</p>
+            </div>
+            <div class="grid grid-flow-col grid-rows-5 grid-cols-1 gap-2 m-4">
+              <UButton
+                icon="fluent:image-search-20-regular"
+                color="primary"
+                class="rounded-full p-2"
+                variant="solid"
+                size="xs"
+                :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
+                :disabled="
+                  loaders.isLoading(Prefixes.ANALYZE + file.name) ||
+                  loaders.isQueued(Prefixes.ANALYZE + file.name)
+                "
+                @click="fileStore.analyzeImage(file)"
+              >
+                Analyze Image
+              </UButton>
+              <UButton
+                icon="fluent:image-search-20-regular"
+                color="primary"
+                class="rounded-full p-2"
+                variant="solid"
+                size="xs"
+                :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
+                @click="attemptMergeTags"
+              >
+                Merge Tags
+              </UButton>
+              <UButton
+                icon="fluent:color-background-20-regular"
+                :color="isSquare(file) ? 'white' : 'emerald'"
+                class="rounded-full p-2"
+                variant="solid"
+                size="xs"
+                :disabled="isSquare(file)"
+                @click="$emit('make-square', file)"
+              >
+                Make Square
+              </UButton>
+              <UButton
+                icon="fluent:crop-16-regular"
+                color="emerald"
+                class="rounded-full p-2"
+                variant="solid"
+                size="xs"
+                @click="$emit('crop-file', file)"
+              >
+                Crop Image
+              </UButton>
+              <UButton
+                icon="fluent:delete-16-regular"
+                color="red"
+                class="rounded-full p-2"
+                variant="solid"
+                size="xs"
+                @click="$emit('delete-file', file)"
+              >
+                Delete Image
+              </UButton>
+            </div>
           </div>
         </div>
       </div>
@@ -265,9 +295,15 @@ const setMenuOptCache = (tag: string, value: OptCategories) => {
 const getTagOptCache = (tag: string) =>
   tagOptCache.value[tag] || OptCategories.ASSIGNED;
 
-const attemptMergeTags = () => {
+const attemptMergeTags = async () => {
+  loaders.start(Prefixes.TAGMERGE + props.file.name);
   const tags = mergeTags(props.file.highConfidenceTags);
-  console.log(tags);
+  if (tags.newTags.length) fileStore.addTag(props.file, tags.newTags);
+  if (tags.removedTags.length)
+    fileStore.removeTag(props.file, tags.removedTags);
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  loaders.end(Prefixes.TAGMERGE + props.file.name);
 };
 
 const unOptimized = (file: ImageFile) => {

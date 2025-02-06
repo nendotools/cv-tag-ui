@@ -8,6 +8,7 @@ interface State {
 export enum Prefixes {
   ANALYZE = "analyze:",
   DIRSCAN = "scan-dir:",
+  TAGMERGE = "tag-merge:",
 }
 
 export const useLoaders = defineStore("loaders", {
