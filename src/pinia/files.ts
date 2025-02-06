@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
+import { useTagMerger } from "@/composables/useTagMerger";
 import { useLoaders, Prefixes } from "./loaders";
 import { useRecall } from "./recall";
+const { hasRootTag } = useTagMerger();
 const worker = new Worker(
   new URL("../assets/workers/file.worker.ts", import.meta.url),
   { type: "module" },
@@ -47,6 +49,7 @@ export const useFiles = defineStore("files", {
 
       for (const file of state.files) {
         const words = file.highConfidenceTags
+          .filter((tag) => hasRootTag(tag))
           .map((word) => (word.split(" ").pop() || "").toLowerCase())
           .filter((word) => word.length > 0);
         duplicates[file.hash] = words.filter(

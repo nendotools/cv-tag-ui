@@ -144,7 +144,7 @@
                 class="rounded-full p-2"
                 variant="solid"
                 size="xs"
-                :disabled="!file.highConfidenceTags.length"
+                :disabled="!hasDuplicates"
                 :loading="loaders.isLoading(Prefixes.TAGMERGE + file.name)"
                 @click="attemptMergeTags"
               >
@@ -259,6 +259,11 @@ const unOptimized = (file: ImageFile) => {
     .filter((word) => word.length > 0);
   return new Set(words).size === words.length;
 };
+
+const hasDuplicates = computed(() => {
+  const duplicates = imageDuplicateTags.value[props.file.hash] || {};
+  return Object.keys(duplicates).length > 0;
+});
 
 const sizeColor = computed(() => {
   if (isSmall(props.file.dimensions))

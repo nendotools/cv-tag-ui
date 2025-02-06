@@ -7,8 +7,11 @@ export const useTagMerger = () => {
     "hair bun",
     "braids",
     "braid",
+    "twintails",
+    "ponytail",
     "scrunchie",
     "eyes",
+    "eyewear",
     "smile",
     "mouth",
     "lips",
@@ -63,6 +66,8 @@ export const useTagMerger = () => {
     "ring",
     "belt",
     "scarf",
+    "neckerchief",
+    "wings",
     "glasses",
     "nude",
     "naked",
@@ -81,6 +86,7 @@ export const useTagMerger = () => {
     "bed",
     "chair",
     "bench",
+    "fence",
     "border",
     "sunlight",
   ];
@@ -113,8 +119,55 @@ export const useTagMerger = () => {
     if (categories.length.includes(b)) return 1;
     if (categories.colors.includes(a)) return -1;
     if (categories.colors.includes(b)) return 1;
+    if (categories.colors.map((c) => `${c}-`).includes(a)) return -1;
+    if (categories.colors.map((c) => `${c}-`).includes(b)) return 1;
     // sort alphabetically
     return a.localeCompare(b);
+  };
+
+  const hasRootTag = (tag: string) => {
+    for (const word of rootTags) {
+      if (tag.endsWith(word)) {
+        if (tag !== word && !tag.includes(" " + word)) continue;
+        if (tag.endsWith(`on ${word}`)) continue;
+        if (tag.endsWith(`ing ${word}`)) continue;
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const mergeActionDescriptors = (tags: string[]) => {
+    // remove loose rootTags that are also part of descriptors (eg: 'on couch', 'adjusting hair')
+    const foundTags: Record<string, boolean> = {};
+    for (const word of rootTags) {
+      for (const tag of tags) {
+        if (tag.endsWith(word)) {
+          // add existing rootTag word to list if found
+          if (tag === word) {
+            foundTags[word] = foundTags[word] || false;
+            continue;
+          }
+
+          // add existing rootTag word to list if found as part of a descriptor
+          if (tag.endsWith(`on ${word}`) || tag.endsWith(`ing ${word}`)) {
+            foundTags[word] = true;
+            continue;
+          }
+        }
+      }
+    }
+
+    // remove rootTags that are part of descriptors from the list and return it
+    const removedTags: string[] = Object.keys(foundTags).reduce(
+      (acc: string[], word: string) => {
+        return acc.concat(foundTags[word] ? word : []);
+      },
+      [],
+    );
+    return {
+      removedTags,
+    };
   };
 
   const mergeTags = (
@@ -146,12 +199,19 @@ export const useTagMerger = () => {
       newTags.push(`${mergedTags[word]} ${word}`.trim());
     }
 
+    // remove loose rootTags that are also part of descriptors (eg: 'on couch', 'adjusting hair')
+    const { removedTags: descriptors } = mergeActionDescriptors(tags);
+
     const sharedTags = removedTags.filter((tag) => newTags.includes(tag));
     return {
       newTags: [...newTags.filter((t) => !sharedTags.includes(t))],
-      removedTags: [...removedTags.filter((t) => !sharedTags.includes(t))],
+      removedTags: [
+        ...removedTags
+          .filter((t) => !sharedTags.includes(t))
+          .concat(descriptors),
+      ],
     };
   };
 
-  return { mergeTags };
+  return { mergeTags, hasRootTag };
 };
