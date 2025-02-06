@@ -26,72 +26,9 @@
           <OrientationDisplay :dimensions="file.dimensions" />
         </div>
         <div>
-          <UHorizontalNavigation
-            :links="[
-              {
-                label: 'Rank',
-                icon: 'fluent:crown-20-filled',
-                badge: {
-                  label: ((file?.confidenceScore || 0) * 100).toFixed(1) + '%',
-                  color: 'amber',
-                  variant: 'soft',
-                },
-                active: getTagOptCache(file.name) === OptCategories.RANK,
-                click: () => setMenuOptCache(file.name, OptCategories.RANK),
-              },
-              {
-                label: 'Applied Tags',
-                icon: 'fluent:tag-multiple-16-filled',
-                badge: {
-                  label: file.highConfidenceTags.length,
-                  color: 'emerald',
-                  variant: 'soft',
-                },
-                active: getTagOptCache(file.name) === OptCategories.ASSIGNED,
-                click: () => setMenuOptCache(file.name, OptCategories.ASSIGNED),
-              },
-              {
-                label: 'Excluded Tags',
-                icon: 'fluent:tag-multiple-16-regular',
-                badge: {
-                  label: file.lowConfidenceTags.length,
-                  color: 'rose',
-                  variant: 'soft',
-                },
-                active: getTagOptCache(file.name) === OptCategories.EXCLUDED,
-                click: () => setMenuOptCache(file.name, OptCategories.EXCLUDED),
-              },
-              {
-                label: 'Tools',
-                icon: 'fluent:developer-board-lightning-toolbox-20-regular',
-                active: getTagOptCache(file.name) === OptCategories.TOOLS,
-                click: () => setMenuOptCache(file.name, OptCategories.TOOLS),
-              },
-              {
-                label: 'Scan',
-                avatar: {
-                  icon:
-                    loaders.hasActiveLoaders(Prefixes.ANALYZE + file.name) ||
-                    loaders.hasQueuedLoaders(Prefixes.ANALYZE + file.name)
-                      ? 'fluent:tag-search-20-filled'
-                      : 'fluent:tag-search-20-regular',
-                  chipColor: loaders.hasQueuedLoaders(
-                    Prefixes.ANALYZE + file.name,
-                  )
-                    ? 'amber'
-                    : loaders.hasActiveLoaders(Prefixes.ANALYZE + file.name)
-                      ? 'rose'
-                      : undefined,
-                },
-                disabled:
-                  [...file.highConfidenceTags, ...file.lowConfidenceTags]
-                    .length > 0,
-                click: () => fileStore.analyzeImage(file),
-              },
-            ]"
-          />
+          <UHorizontalNavigation :links="links" />
           <div
-            v-show="getTagOptCache(file.name) === OptCategories.RANK"
+            v-show="getTagOptCache() === OptCategories.RANK"
             class="ml-4 flex flex-col gap-2 m-4"
           >
             <ATag
@@ -107,7 +44,7 @@
             </div>
           </div>
           <div
-            v-show="getTagOptCache(file.name) === OptCategories.ASSIGNED"
+            v-show="getTagOptCache() === OptCategories.ASSIGNED"
             class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4"
           >
             <ATag
@@ -135,7 +72,7 @@
             </div>
           </div>
           <div
-            v-show="getTagOptCache(file.name) === OptCategories.EXCLUDED"
+            v-show="getTagOptCache() === OptCategories.EXCLUDED"
             class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4"
           >
             <ATag
@@ -154,7 +91,7 @@
             </div>
           </div>
           <div
-            v-show="getTagOptCache(file.name) === OptCategories.TOOLS"
+            v-show="getTagOptCache() === OptCategories.TOOLS"
             class="ml-4 grid grid-rows-1 grid-cols-4 gap-2 m-4"
           >
             <div
@@ -185,7 +122,7 @@
             >
               <p class="text-zinc-50/25">Merging Tags...</p>
             </div>
-            <div class="grid grid-flow-col grid-rows-5 grid-cols-1 gap-2 m-4">
+            <div class="flex flex-col items-stretch gap-2 m-4">
               <UButton
                 icon="fluent:image-search-20-regular"
                 color="primary"
@@ -202,19 +139,20 @@
                 Analyze Image
               </UButton>
               <UButton
-                icon="fluent:image-search-20-regular"
+                icon="fluent:arrow-join-20-regular"
                 color="primary"
                 class="rounded-full p-2"
                 variant="solid"
                 size="xs"
-                :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
+                :disabled="!file.highConfidenceTags.length"
+                :loading="loaders.isLoading(Prefixes.TAGMERGE + file.name)"
                 @click="attemptMergeTags"
               >
                 Merge Tags
               </UButton>
               <UButton
                 icon="fluent:color-background-20-regular"
-                :color="isSquare(file) ? 'white' : 'emerald'"
+                color="emerald"
                 class="rounded-full p-2"
                 variant="solid"
                 size="xs"
@@ -233,6 +171,7 @@
               >
                 Crop Image
               </UButton>
+              <hr class="w-1/2 self-center my-1" />
               <UButton
                 icon="fluent:delete-16-regular"
                 color="red"
@@ -256,8 +195,7 @@ import ATag from "~/components/ui/ATag.vue";
 import TagInput from "~/components/ui/TagInput.vue";
 
 import { useMakeSquare } from "~/composables/useMakeSquare";
-const { isSquare, isSmall, isMedium, isLarge, isPortrait, isLandscape } =
-  useMakeSquare();
+const { isSquare, isSmall, isMedium, isLarge } = useMakeSquare();
 
 import { useTagMerger } from "#build/imports";
 const { mergeTags } = useTagMerger();
@@ -288,12 +226,17 @@ enum OptCategories {
   EXCLUDED = "excluded",
   TOOLS = "tools",
 }
-const tagOptCache = ref<Record<string, OptCategories>>({});
-const setMenuOptCache = (tag: string, value: OptCategories) => {
-  tagOptCache.value[tag] = value;
+const tagOptCache = ref<OptCategories>(OptCategories.TOOLS);
+const setMenuOptCache = (value: OptCategories) => {
+  tagOptCache.value = value;
 };
-const getTagOptCache = (tag: string) =>
-  tagOptCache.value[tag] || OptCategories.ASSIGNED;
+const getTagOptCache = () => tagOptCache.value || OptCategories.ASSIGNED;
+
+onMounted(() => {
+  if (props.file.highConfidenceTags.length)
+    setMenuOptCache(OptCategories.ASSIGNED);
+  else setMenuOptCache(OptCategories.TOOLS);
+});
 
 const attemptMergeTags = async () => {
   loaders.start(Prefixes.TAGMERGE + props.file.name);
@@ -342,4 +285,65 @@ const sizeColor = computed(() => {
     bg: "bg-zinc-500/10",
   };
 });
+
+const links = computed(() => [
+  {
+    label: "Rank",
+    icon: "fluent:crown-20-filled",
+    badge: {
+      label: ((props.file?.confidenceScore || 0) * 100).toFixed(1) + "%",
+      color: "amber",
+      variant: "soft",
+    },
+    active: getTagOptCache() === OptCategories.RANK,
+    click: () => setMenuOptCache(OptCategories.RANK),
+  },
+  {
+    label: "Applied Tags",
+    icon: "fluent:tag-multiple-16-filled",
+    badge: {
+      label: props.file.highConfidenceTags.length,
+      color: "emerald",
+      variant: "soft",
+    },
+    active: getTagOptCache() === OptCategories.ASSIGNED,
+    click: () => setMenuOptCache(OptCategories.ASSIGNED),
+  },
+  {
+    label: "Excluded Tags",
+    icon: "fluent:tag-multiple-16-regular",
+    badge: {
+      label: props.file.lowConfidenceTags.length,
+      color: "rose",
+      variant: "soft",
+    },
+    active: getTagOptCache() === OptCategories.EXCLUDED,
+    click: () => setMenuOptCache(OptCategories.EXCLUDED),
+  },
+  {
+    label: "Tools",
+    icon: "fluent:developer-board-lightning-toolbox-20-regular",
+    active: getTagOptCache() === OptCategories.TOOLS,
+    click: () => setMenuOptCache(OptCategories.TOOLS),
+  },
+  {
+    label: "Scan",
+    avatar: {
+      icon:
+        loaders.hasActiveLoaders(Prefixes.ANALYZE + props.file.name) ||
+        loaders.hasQueuedLoaders(Prefixes.ANALYZE + props.file.name)
+          ? "fluent:tag-search-20-filled"
+          : "fluent:tag-search-20-regular",
+      chipColor: loaders.hasQueuedLoaders(Prefixes.ANALYZE + props.file.name)
+        ? "amber"
+        : loaders.hasActiveLoaders(Prefixes.ANALYZE + props.file.name)
+          ? "rose"
+          : undefined,
+    },
+    disabled:
+      [...props.file.highConfidenceTags, ...props.file.lowConfidenceTags]
+        .length > 0,
+    click: () => fileStore.analyzeImage(props.file),
+  },
+]);
 </script>
