@@ -1,5 +1,7 @@
 import argparse
 from pathlib import Path
+from rembg import remove, new_session
+from PIL import Image
 
 from utils import dedupe_files, save_csv, save_json
 from interrogator import Interrogator
@@ -58,6 +60,32 @@ def process_file_endpoint():
         save_csv(list(output_json["high"].keys()), f"{file_dir}/{file_basename}.txt")
 
     return jsonify(output_json), 200
+
+
+@app.route("/rmbg", methods=["POST"])
+def rmbg_endpoint():
+    data = request.json
+    if data is None or "path" not in data:
+        return jsonify({"status": "error", "message": "path not provided"}), 400
+
+    # verify file exists
+    if not Path(data["path"]).exists():
+        return jsonify({"status": "error", "message": "file not found"}), 400
+    # verify file is an image
+    ext = Path(data["path"]).suffix
+    if not ext in [".jpg", ".jpeg", ".png"]:
+        return jsonify({"status": "error", "message": "file is not an image"}), 400
+    img = Image.open(data["path"])
+    # get image color mode: "RGB", "RGBA"
+    cs = img.mode
+    session = new_session("birefnet-portrait")
+    output = remove(img, bgcolor=(255, 255, 255), session=session)
+    if cs == "RGB":
+        output = output.convert("RGB")
+    # convert the output image to match the input image format
+    out_path = data["path"] + ".rmbg" + ext
+    output.save(out_path)
+    return jsonify({"result_path": out_path, "status": "success"}), 200
 
 
 if __name__ == "__main__":

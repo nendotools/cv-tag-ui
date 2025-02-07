@@ -493,6 +493,53 @@ export const useFiles = defineStore("files", {
       }
     },
 
+    async removeBackground(file: ImageFile) {
+      const loaders = useLoaders();
+      loaders.start(`${Prefixes.REMOVEBG}${file.name}`);
+      const result = await $fetch<{ result_path: string; status: string }>(
+        `/inferrence/rmbg`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ path: file.path }),
+        },
+      );
+
+      loaders.end(`${Prefixes.REMOVEBG}${file.name}`);
+      if (result.result_path) {
+        return `/resource${result.result_path}`;
+      }
+    },
+
+    async resolveBackgroundRemoval(
+      file: ImageFile,
+      result: string,
+      replace: boolean = false,
+    ) {
+      // pass through args to API, if replace, update the file with new resource
+      await $fetch<{ path: string; isValid: boolean; error?: string }>(
+        `/api/files/background`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            path: file.path,
+            result: result.replace(`/resource`, ""),
+            replace,
+          }),
+        },
+      );
+
+      const fileIndex = this.files.findIndex((f) => f.path === file.path);
+      if (fileIndex !== -1) {
+        this.files[fileIndex].resource = `${file.resource}?cb=${Date.now()}`;
+      }
+    },
+
     async moveFiles(
       file: ImageFile,
       target: string,

@@ -111,6 +111,7 @@
               />
             </div>
             <div class="flex flex-col items-stretch gap-2 m-4">
+              <h3 class="text-sm font-semibold text-center">Tagging</h3>
               <UButton
                 icon="fluent:image-search-20-regular"
                 color="primary"
@@ -138,6 +139,19 @@
               >
                 Merge Tags
               </UButton>
+              <h3 class="mt-3 text-sm font-semibold text-center">Edit Image</h3>
+              <UButton
+                icon="fluent:video-background-effect-20-regular"
+                color="emerald"
+                class="rounded-full p-2"
+                variant="solid"
+                size="xs"
+                :disabled="removingBackground"
+                :loading="removingThisBackground"
+                @click="$emit('remove-bg', file)"
+              >
+                Remove Background
+              </UButton>
               <UButton
                 icon="fluent:color-background-20-regular"
                 color="emerald"
@@ -159,7 +173,7 @@
               >
                 Crop Image
               </UButton>
-              <hr class="w-1/2 self-center my-1" />
+              <hr class="w-1/2 self-center my-4" />
               <UButton
                 icon="fluent:delete-16-regular"
                 color="red"
@@ -207,7 +221,16 @@ defineEmits<{
   (event: "delete-file", file: ImageFile): void;
   (event: "set-focus-tag", tag: string): void;
   (event: "make-square", file: ImageFile): void;
+  (event: "remove-bg", file: ImageFile): void;
 }>();
+
+const removingBackground = computed(() => {
+  return loaders.hasActiveLoaders(Prefixes.REMOVEBG);
+});
+const removingThisBackground = computed(() => {
+  return loaders.hasActiveLoaders(Prefixes.REMOVEBG + props.file.name);
+});
+
 enum OptCategories {
   RANK = "rank",
   ASSIGNED = "assigned",

@@ -88,6 +88,7 @@
         @make-square="attemptMakeSquare"
         @set-focus-tag="setFocusTag"
         @crop-file="cropTarget = file"
+        @remove-bg="removeBackground"
         @delete-file="deleteFile(file)"
       />
     </div>
@@ -223,6 +224,13 @@
     :save-callback="resolveImageEdit"
     @close="closeCropModal"
   />
+  <PreviewModal
+    :open="!!removalTarget"
+    :image="removalTarget"
+    :preview="removalPreview"
+    @save="resolveBgRemoval(true)"
+    @discard="resolveBgRemoval(false)"
+  />
   <TagPreviewer
     :open="!!focusTag"
     :tag="focusTag"
@@ -257,6 +265,7 @@ const { visibleFiles } = storeToRefs(fileStore);
 
 import { useMakeSquare } from "~/composables/useMakeSquare";
 import OptionsSlideover from "~/components/ui/OptionsSlideover.vue";
+import PreviewModal from "~/components/ui/PreviewModal.vue";
 const { makeSquare, isSquare } = useMakeSquare();
 
 const mediaRef = useTemplateRef("media-list");
@@ -338,6 +347,18 @@ const setPage = async (page: number = 1) => {
   fileStore.setPage(page);
 };
 
+const removalTarget = ref<ImageFile | null>(null);
+const removalPreview = ref<string | null>(null);
+const removeBackground = async (file: ImageFile) => {
+  setAnimation("make-square-effect");
+  const previewPath = await fileStore.removeBackground(file);
+  if (previewPath) {
+    removalPreview.value = previewPath;
+    removalTarget.value = file;
+  }
+  stopAnimation();
+};
+
 const attemptMakeSquare = (file: ImageFile) => {
   makeSquare(file, resolveImageEdit);
 };
@@ -362,6 +383,25 @@ const resolveImageEdit = async (dataUrl: string, file: ImageFile) => {
   visibleFiles.value[index].dimensions = file.dimensions;
   visibleFiles.value[index].resource =
     `${visibleFiles.value[index].resource}?cb=${Date.now()}`;
+};
+
+const resolveBgRemoval = async (overwrite: boolean) => {
+  if (!removalTarget.value || !removalPreview.value) return;
+  await fileStore.resolveBackgroundRemoval(
+    removalTarget.value,
+    removalPreview.value,
+    overwrite,
+  );
+  if (overwrite) {
+    const index = visibleFiles.value.findIndex(
+      (f) => f.path === removalTarget.value?.path,
+    );
+    if (index === -1) return;
+    visibleFiles.value[index].resource =
+      `${visibleFiles.value[index].resource}?cb=${Date.now()}`;
+  }
+  removalTarget.value = null;
+  removalPreview.value = null;
 };
 
 const uploadFiles = async () => {

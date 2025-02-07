@@ -31,6 +31,7 @@ export const useTagMerger = () => {
     "pantyhose",
     "thighhighs",
     "shoes",
+    "boots",
     "footwear",
     "heels",
     "dress",
@@ -111,6 +112,7 @@ export const useTagMerger = () => {
       "gold",
     ],
     length: ["long", "medium", "short"],
+    state: ["open", "closed"],
   };
 
   const byCategory = (a: string, b: string) => {
@@ -121,6 +123,9 @@ export const useTagMerger = () => {
     if (categories.colors.includes(b)) return 1;
     if (categories.colors.map((c) => `${c}-`).includes(a)) return -1;
     if (categories.colors.map((c) => `${c}-`).includes(b)) return 1;
+    // state should be last
+    if (categories.state.includes(a)) return 1;
+    if (categories.state.includes(b)) return -1;
     // sort alphabetically
     return a.localeCompare(b);
   };

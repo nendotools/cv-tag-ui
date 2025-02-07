@@ -9,6 +9,7 @@ export enum Prefixes {
   ANALYZE = "analyze:",
   DIRSCAN = "scan-dir:",
   TAGMERGE = "tag-merge:",
+  REMOVEBG = "remove-bg:",
 }
 
 export const useLoaders = defineStore("loaders", {

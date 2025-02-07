@@ -1,6 +1,7 @@
 import { defineEventHandler, H3Event, readFormData } from "h3";
 import imageSize from "image-size";
 import * as fs from "fs";
+import { createHash } from "crypto";
 
 export default defineEventHandler(async (event: H3Event) => {
   const formData = await readFormData(event);
@@ -24,11 +25,13 @@ export default defineEventHandler(async (event: H3Event) => {
       `${path}/${file.name}`,
       Buffer.from(await file.arrayBuffer()),
     );
+    const fileData = fs.readFileSync(`${path}/${file.name}`);
 
     const image: ImageFile = {
       path: `${path}/${file.name}`,
       resource: `/resource${path}/${file.name}`,
       name: file.name,
+      hash: createHash("sha256").update(fileData).digest("hex"),
       dimensions: {
         width: 0,
         height: 0,
@@ -36,6 +39,9 @@ export default defineEventHandler(async (event: H3Event) => {
       tags: [],
       highConfidenceTags: [],
       lowConfidenceTags: [],
+      confidenceKeys: {},
+      confidenceScore: 0,
+      mimeType: file.type,
     };
     try {
       const dims = imageSize(`${path}/${file.name}`);
