@@ -23,6 +23,7 @@ interface State {
   filterPreview: Set<string>;
 
   sort: (typeof Sorts)[number];
+  strictDuplicates: boolean;
 
   threshold: number;
 }
@@ -40,16 +41,31 @@ export const useFiles = defineStore("files", {
     appliedFilters: new Set<string>(),
     filterPreview: new Set<string>(),
     sort: "name",
+    strictDuplicates: false,
     threshold: 0.35,
   }),
 
   getters: {
-    imageDuplicateTags(state: State) {
+    strictDuplicateTags(state: State) {
       const duplicates: Record<string, string[]> = {};
 
       for (const file of state.files) {
         const words = file.highConfidenceTags
           .filter((tag) => hasRootTag(tag))
+          .map((word) => (word.split(" ").pop() || "").toLowerCase())
+          .filter((word) => word.length > 0);
+        duplicates[file.hash] = words.filter(
+          (word, index) => words.indexOf(word) !== index,
+        );
+      }
+      return duplicates;
+    },
+    imageDuplicateTags(state: State) {
+      const duplicates: Record<string, string[]> = {};
+
+      for (const file of state.files) {
+        const words = file.highConfidenceTags
+          .filter((tag) => !state.strictDuplicates || hasRootTag(tag))
           .map((word) => (word.split(" ").pop() || "").toLowerCase())
           .filter((word) => word.length > 0);
         duplicates[file.hash] = words.filter(

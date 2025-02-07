@@ -95,10 +95,7 @@
             class="ml-4 grid grid-rows-1 grid-cols-4 gap-2 m-4"
           >
             <div
-              v-if="
-                file?.highConfidenceTags.length &&
-                !loaders.isLoading(Prefixes.TAGMERGE + file.name)
-              "
+              v-if="file?.highConfidenceTags.length"
               class="grid grid-cols-5 grid-rows-5 col-span-3 gap-2"
             >
               <ATag
@@ -107,20 +104,11 @@
                 :label="tag"
                 :exists="true"
                 :simple="mode !== 'tag'"
-                :duplicates="imageDuplicateTags[file.hash]"
+                :highlight="duplicateTags.includes(tag.split(' ').pop() || '')"
                 :class="{ 'cursor-pointer': mode === 'view' }"
                 @delete="fileStore.removeTag(file, [tag])"
                 @click.stop="$emit('set-focus-tag', tag)"
               />
-            </div>
-            <div
-              v-if="
-                file?.highConfidenceTags.length &&
-                loaders.isLoading(Prefixes.TAGMERGE + file.name)
-              "
-              class="grid grid-cols-1 grid-rows-1 col-span-3 gap-2"
-            >
-              <p class="text-zinc-50/25">Merging Tags...</p>
             </div>
             <div class="flex flex-col items-stretch gap-2 m-4">
               <UButton
@@ -231,6 +219,9 @@ const setMenuOptCache = (value: OptCategories) => {
   tagOptCache.value = value;
 };
 const getTagOptCache = () => tagOptCache.value || OptCategories.ASSIGNED;
+const duplicateTags = computed(() => {
+  return imageDuplicateTags.value[props.file.hash] || [];
+});
 
 onMounted(() => {
   if (props.file.highConfidenceTags.length)
@@ -249,20 +240,8 @@ const attemptMergeTags = async () => {
   loaders.end(Prefixes.TAGMERGE + props.file.name);
 };
 
-const unOptimized = (file: ImageFile) => {
-  // if the high confidence tags are empty, then return true
-  if (!file.highConfidenceTags.length) return true;
-
-  // if the high confidence tags are not empty, then return true if the tags include no duplicate words in all tags
-  const words = file.highConfidenceTags
-    .map((word) => (word.split(" ").pop() || "").toLowerCase())
-    .filter((word) => word.length > 0);
-  return new Set(words).size === words.length;
-};
-
 const hasDuplicates = computed(() => {
-  const duplicates = imageDuplicateTags.value[props.file.hash] || {};
-  return Object.keys(duplicates).length > 0;
+  return !!fileStore.strictDuplicateTags[props.file.hash]?.length || false;
 });
 
 const sizeColor = computed(() => {

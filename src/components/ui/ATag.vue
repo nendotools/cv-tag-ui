@@ -4,8 +4,10 @@
     :class="[
       exists ? 'hover:border-rose-400' : 'hover:border-emerald-400',
       !simple ? ['bg-teal-50/10', 'border', 'border-teal-50/20'] : '',
+      'colorize',
+      { highlight },
     ]"
-    :style="{ color: textColor }"
+    :style="colorCSS"
   >
     <div class="text-md w-max select-none">
       {{ label }}
@@ -45,24 +47,33 @@ const props = withDefaults(
     label: string;
     simple?: boolean;
     exists: boolean;
-    duplicates?: string[];
+    highlight?: boolean;
   }>(),
   {
     simple: false,
+    highlight: false,
     duplicates: () => [],
   },
 );
 
 defineEmits(["add", "delete"]);
-const textColor = computed(() => {
-  if (!props.duplicates.includes(props.label.split(" ").pop() || "")) {
-    return "hsl(0, 95%, 100% / 90%)";
-  }
+const colorCSS = computed(() => {
   // convert last word of label to hsl color using modulo
   const lastWord = props.label.split(" ").pop() || "empty";
   const hash = lastWord
     .split("")
     .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return `hsl(${hash % 360}, 100%, 70%)`;
+  return {
+    "--color": `hsl(${hash % 360}, 100%, 70%)`,
+  };
 });
 </script>
+
+<style lang="scss" scoped>
+.colorize {
+  color: hsl(0, 95%, 100%, 0.8);
+}
+.highlight {
+  color: var(--color);
+}
+</style>

@@ -28,6 +28,18 @@
             @change="setThreshold"
           />
         </div>
+        <h3 class="text-lg p-2">Model Options</h3>
+        <div class="pl-4 gap-2 flex flex-col gap-1">
+          <UCheckbox
+            v-model="fileStore.strictDuplicates"
+            label="Strict Duplicates"
+            :description="
+              fileStore.strictDuplicates
+                ? 'Only highlight key tags'
+                : 'Highlight all tags with a matching root word'
+            "
+          />
+        </div>
         <h2 class="text-lg p-2">Clean-up</h2>
         <div class="flex flex-col gap-2 pl-4">
           <div class="text-2xs text-slate-300/60 break-all">
@@ -39,8 +51,9 @@
               color="rose"
               :disabled="removedFiles != null"
               @click="handleDedup"
-              >Remove Duplicates</UButton
             >
+              Remove Duplicates
+            </UButton>
             <span class="pl-4">{{
               removedFiles != null ? `Removed ${removedFiles} files` : ""
             }}</span>
