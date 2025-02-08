@@ -112,11 +112,14 @@ export const useTagMerger = () => {
       "gold",
     ],
     length: ["long", "medium", "short"],
+    complexity: ["simple", "detailed"],
     state: ["open", "closed"],
   };
 
   const byCategory = (a: string, b: string) => {
     if (a === b) return 0;
+    if (categories.complexity.includes(a)) return -1;
+    if (categories.complexity.includes(b)) return 1;
     if (categories.length.includes(a)) return -1;
     if (categories.length.includes(b)) return 1;
     if (categories.colors.includes(a)) return -1;
@@ -175,6 +178,7 @@ export const useTagMerger = () => {
     };
   };
 
+  // TODO: keep paired words together (eg: 'very long', 'mole above')
   const mergeTags = (
     tags: string[],
   ): { newTags: string[]; removedTags: string[] } => {

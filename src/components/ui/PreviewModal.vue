@@ -32,7 +32,7 @@
         </div>
 
         <div
-          class="w-3/4 flex justify-center content-center align-center gap-4 mx-12"
+          class="w-3/4 justify-center content-center align-center gap-4 mx-12 hidden md:flex"
         >
           <UButton
             variant="outline"
@@ -56,6 +56,35 @@
           >
             Removed
           </UButton>
+        </div>
+
+        <div
+          class="w-3/4 flex flex-col justify-center content-center align-center gap-4 mx-12 md:hidden"
+        >
+          <div class="w-full flex-2">
+            <URange
+              v-model="opacity"
+              :min="0"
+              :max="100"
+              class="top-1/2 -translate-y-1/2"
+            />
+          </div>
+          <div class="flex flex-row justify-around">
+            <UButton
+              variant="outline"
+              :color="opacity === 0 ? 'primary' : 'black'"
+              @click="setShowResult(false)"
+            >
+              Original
+            </UButton>
+            <UButton
+              variant="outline"
+              :color="opacity === 100 ? 'primary' : 'black'"
+              @click="setShowResult(true)"
+            >
+              Removed
+            </UButton>
+          </div>
         </div>
       </div>
 
@@ -96,10 +125,21 @@ const overlayCSS = computed(() => {
 </style>
 
 <style scoped>
+@media (min-width: 640px) {
+  .image-frame {
+    height: 65dvh;
+    width: 80dvw;
+  }
+}
+
+@media (max-width: 639px) {
+  .image-frame {
+    height: 45dvh;
+    width: 90dvw;
+  }
+}
 .image-frame {
   position: relative;
-  height: calc(65dvh);
-  width: calc(75dvw);
   .measured-size {
     position: absolute;
     left: 50%;

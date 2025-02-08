@@ -45,7 +45,7 @@
           </div>
           <div
             v-show="getTagOptCache() === OptCategories.ASSIGNED"
-            class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4"
+            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 grid-rows-5 gap-2"
           >
             <ATag
               v-for="tag in [...file?.highConfidenceTags]"
@@ -73,7 +73,7 @@
           </div>
           <div
             v-show="getTagOptCache() === OptCategories.EXCLUDED"
-            class="ml-4 grid grid-rows-5 grid-cols-5 gap-2 m-4"
+            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 grid-rows-5 gap-2"
           >
             <ATag
               v-for="tag in [...file?.lowConfidenceTags]"
@@ -92,11 +92,11 @@
           </div>
           <div
             v-show="getTagOptCache() === OptCategories.TOOLS"
-            class="ml-4 grid grid-rows-1 grid-cols-4 gap-2 m-4"
+            class="ml-4 grid grid-rows-1 grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2 m-4"
           >
             <div
               v-if="file?.highConfidenceTags.length"
-              class="grid grid-cols-5 grid-rows-5 col-span-3 gap-2"
+              class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 grid-rows-5 col-span-1 md:col-span-2 lg:col-span-3 gap-2"
             >
               <ATag
                 v-for="tag in [...file?.highConfidenceTags]"
