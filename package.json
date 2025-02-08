@@ -6,6 +6,7 @@
     "setup": "./scripts/setup-python.sh",
     "build": "nuxt build",
     "dev": "./scripts/run-dev.sh",
+    "serve": "./scripts/run-prod.sh",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"

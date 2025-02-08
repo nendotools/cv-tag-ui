@@ -27,14 +27,7 @@ with GPU support, which requires an NVIDIA GPU and CUDA installed.
 After installation, you can start the server with:
 
 ```bash
-yarn dev
-```
-
-If you want to run the server with access from other devices on the network, use
-the `--host` flag:
-
-```bash
-yarn dev --host
+yarn serve
 ```
 
 ## Feature Roadmap
@@ -58,13 +51,14 @@ yarn dev --host
     - [x] Cropping tool
     - [x] Fixed aspect ratios {1:1, 4:3, 3:4}
     - [x] Letter-boxing {1:1, 4:3, 3:4}
-    - [ ] remove background
+    - [x] remove background
 - Tagging
   - [x] Image auto-tagging
-  - [ ] Individual Image tagging
-  - [x] Bulk tagging (add/remove)
-  - [ ] Recognition Model selection
+  - [x] Individual Image tagging
+  - [x] Tag Merging (combining similar tags)
   - [x] Model Tag automation
+  - [x] Bulk tagging (add/remove from all images)
+  - [ ] Recognition Model selection
 - Directories
   - [x] Image directory creation
   - [x] Image directory deletion

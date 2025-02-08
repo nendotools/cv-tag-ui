@@ -13,7 +13,8 @@ export default defineNitroPlugin((nitro) => {
     if (app.py) {
       return;
     }
-    const pythonUtilPath = process.env.PYTHON_UTIL_PATH ?? "cv-server";
+    console.log(process.env.NODE_ENV);
+    const pythonUtilPath = useRuntimeConfig().pythonUtilPath;
     const cmdArr = [`${pythonUtilPath}/app.py`];
     app.py = spawn(`python`, cmdArr);
 

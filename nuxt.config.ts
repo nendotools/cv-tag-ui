@@ -5,7 +5,9 @@ export default defineNuxtConfig({
   ssr: false,
   srcDir: "src",
   runtimeConfig: {
-    pythonUtilPath: process.env.PYTHON_UTIL_PATH,
+    // local file path for cv-server directory
+    pythonUtilPath:
+      process.env.NODE_ENV === "production" ? "../cv-server" : "./cv-server",
   },
 
   modules: ["@pinia/nuxt", "@nuxt/ui", "@nuxt/icon"],
