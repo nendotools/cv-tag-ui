@@ -47,3 +47,6 @@ fi
 # Install dependencies
 pip install -r "$REQUIREMENTS_FILE"
 echo "Python environment setup complete."
+
+yarn
+echo "Node environment setup complete."
