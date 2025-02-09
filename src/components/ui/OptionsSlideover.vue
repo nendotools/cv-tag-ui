@@ -19,7 +19,7 @@
         <div class="pl-4 py-2 flex flex-col gap-1">
           <span class="text-sm"
             >Tag Confidence:
-            <span class="text-primary">{{ threshold }}%</span></span
+            <span class="text-primary">{{ threshold.toFixed(0) }}%</span></span
           >
           <URange
             :min="0"

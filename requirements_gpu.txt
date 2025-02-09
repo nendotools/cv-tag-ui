@@ -7,3 +7,4 @@ deepdanbooru==1.0.2
 onnxruntime-gpu
 Flask==3.1
 rembg[gpu]
+tensorrt

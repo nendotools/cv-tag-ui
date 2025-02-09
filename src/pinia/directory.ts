@@ -5,15 +5,20 @@ export const KOHYA_FOLDER_PATTERN: RegExp = /^\d+[_]\w+[ ]\w+$/i;
 export const KOHYA_FOLDER_REGEX: RegExp = /(\d+)[_](\w+)[ ](\w+)/i;
 
 interface State {
+  kohyaConfig: string | null;
   baseDirectory: string;
   activeDirectory: string;
-  relatedDirectories: string[];
+  relatedDirectories: {
+    path: string;
+    isKohya: boolean;
+  }[];
   subDirectories: Record<string, ImageDirectory>;
 }
 
 export const useDirectory = defineStore("directory", {
   state: (): State => ({
-    baseDirectory: "", // root directory
+    kohyaConfig: null, // Kohya config file
+    baseDirectory: "", // root directory [from input or kohya config]
     activeDirectory: "", // current directory, relative to baseDirectory
     relatedDirectories: [], // directories in the same level as activeDirectory
     subDirectories: {}, // directories inside activeDirectory
@@ -21,7 +26,7 @@ export const useDirectory = defineStore("directory", {
 
   getters: {
     workingDirectory(state: State) {
-      if (state.baseDirectory === "") return '';
+      if (state.baseDirectory === "") return "";
       if (state.activeDirectory === "") return state.baseDirectory;
       return `${state.baseDirectory}/${state.activeDirectory}`;
     },
@@ -39,8 +44,8 @@ export const useDirectory = defineStore("directory", {
       };
     },
     containsKohyaFolder(state: State) {
-      return state.relatedDirectories.some((dir) => KOHYA_FOLDER_PATTERN.test(dir));
-    }
+      return state.relatedDirectories.some((dir) => dir.isKohya);
+    },
   },
 
   actions: {
@@ -52,7 +57,9 @@ export const useDirectory = defineStore("directory", {
       const directories = await $fetch<{
         path: string;
         isValid: boolean;
+        isKohya: boolean;
         innerDirectories: string[];
+        kohyaDirectories: string[];
       }>(`/api/directories`, {
         method: "POST",
         headers: {
@@ -60,27 +67,33 @@ export const useDirectory = defineStore("directory", {
         },
         body: JSON.stringify({ path }),
       });
+      const dirs = directories.innerDirectories.map((dir) => ({
+        path: dir,
+        isKohya: directories.kohyaDirectories.includes(dir),
+      }));
       if (save) {
-        this.relatedDirectories = directories.innerDirectories;
-        return directories.innerDirectories;
+        this.relatedDirectories = dirs;
+        return dirs;
       }
-      return directories.innerDirectories;
+      return dirs;
     },
 
     async scanDirectories() {
       const loader = useLoaders();
       for (const directory of this.relatedDirectories) {
-        loader.enqueue(`${Prefixes.DIRSCAN}${directory}`);
+        loader.enqueue(`${Prefixes.DIRSCAN}${directory.path}`);
       }
 
       for (const directory of this.relatedDirectories) {
-        loader.dequeue(`${Prefixes.DIRSCAN}${directory}`);
-        loader.start(`${Prefixes.DIRSCAN}${directory}`);
+        loader.dequeue(`${Prefixes.DIRSCAN}${directory.path}`);
+        loader.start(`${Prefixes.DIRSCAN}${directory.path}`);
         const res = await $fetch<ImageDirectory>(`/api/directories`, {
-          params: { path: encodeURIComponent(`${this.baseDirectory}/${directory}`) },
+          params: {
+            path: encodeURIComponent(`${this.baseDirectory}/${directory.path}`),
+          },
         });
-        this.subDirectories[directory] = res;
-        loader.end(`${Prefixes.DIRSCAN}${directory}`);
+        this.subDirectories[directory.path] = res;
+        loader.end(`${Prefixes.DIRSCAN}${directory.path}`);
       }
     },
 
@@ -92,6 +105,41 @@ export const useDirectory = defineStore("directory", {
       if (asKohya) {
         await this.fetchDirectories(this.workingDirectory, true);
         await this.scanDirectories();
+      }
+    },
+
+    async setFromConfig(configDir: string) {
+      // call api to get the kohya config, set the base directory from training data dir
+      const res = await $fetch<Record<string, any>>(`/api/directories/kohya`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        query: {
+          path: encodeURIComponent(configDir),
+        },
+      });
+
+      if (res.kohya) {
+        this.kohyaConfig = res.configPath;
+        this.setDirectory(res.kohya.train_data_dir, true); // @ts-ignore @eslint-ignore
+      }
+      return res.configPath;
+    },
+
+    async setKohyaConfig(configPath: string) {
+      // call api to get the kohya config, set the base directory from training data dir
+      const res = await $fetch<Record<string, any>>(`/api/directories/kohya`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        query: {
+          path: encodeURIComponent(configPath),
+        },
+      });
+
+      if (res.kohya) {
+        this.kohyaConfig = configPath;
+        this.setDirectory(res.kohya.train_data_dir, true); // @ts-ignore @eslint-ignore
       }
     },
 
@@ -150,7 +198,7 @@ export const useDirectory = defineStore("directory", {
       });
       return {
         count: res.count,
-        prunedFiles: res.pruned_files
+        prunedFiles: res.pruned_files,
       };
     },
   },

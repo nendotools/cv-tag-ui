@@ -17,7 +17,7 @@ export const useRecall = defineStore("recall", {
         return this.data[key];
       }
       const value = localStorage.getItem(key);
-      if (value) {
+      if (value && value !== "undefined") {
         this.data[key] = JSON.parse(value);
         return this.data[key];
       }

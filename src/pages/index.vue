@@ -316,19 +316,27 @@ const openTagPanel = () => {
 onMounted(async () => {
   tagStore.fetchModels();
   const directory = recall("directory");
-  const acttiveDirectory = recall("activeDirectory");
+  const activeDirectory = recall("activeDirectory");
   const threshold = recall("threshold");
+  const kohya = recall("kohyaConfig");
   if (threshold) fileStore.setThreshold(threshold);
 
-  if (directory && directoryStore.baseDirectory === "") {
+  if (kohya) {
+    console.log("Setting Kohya Config", kohya);
+    await directoryStore.setKohyaConfig(kohya);
+    if (activeDirectory) {
+      directoryStore.activeDirectory = activeDirectory;
+      fileStore.setDirectory(directoryStore.workingDirectory);
+    }
+  } else if (directory && directoryStore.baseDirectory === "") {
     directoryStore.setDirectory(directory, true);
-    if (acttiveDirectory) {
-      directoryStore.activeDirectory = acttiveDirectory;
+    if (activeDirectory) {
+      directoryStore.activeDirectory = activeDirectory;
       fileStore.setDirectory(directoryStore.workingDirectory);
     }
   }
 
-  if (!acttiveDirectory) openDirectoryModal();
+  if (!activeDirectory) openDirectoryModal();
   animateRotation();
 });
 
