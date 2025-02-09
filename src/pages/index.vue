@@ -85,6 +85,7 @@
         :key="file.name"
         :mode="mode"
         :file="file"
+        @analyze-image="analyzeImage"
         @make-square="attemptMakeSquare"
         @set-focus-tag="setFocusTag"
         @crop-file="cropTarget = file"
@@ -349,6 +350,12 @@ const deleteFile = (file: ImageFile) => {
 const analyzeDirectory = async () => {
   setAnimation("scan-media-effect");
   await fileStore.analyzeDirectory();
+  stopAnimation();
+};
+
+const analyzeImage = async (file: ImageFile) => {
+  setAnimation("scan-media-effect");
+  await fileStore.analyzeImage(file);
   stopAnimation();
 };
 

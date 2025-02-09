@@ -51,6 +51,7 @@ export const useTagMerger = () => {
     "uniform",
     "tie",
     "bowtie",
+    "necktie",
     "collar",
     "jacket",
     "sweater",

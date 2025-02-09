@@ -123,7 +123,7 @@
                   loaders.isLoading(Prefixes.ANALYZE + file.name) ||
                   loaders.isQueued(Prefixes.ANALYZE + file.name)
                 "
-                @click="fileStore.analyzeImage(file)"
+                @click="$emit('analyze-image', file)"
               >
                 Analyze Image
               </UButton>
@@ -213,7 +213,8 @@ const props = defineProps<{
   file: ImageFile;
 }>();
 
-defineEmits<{
+const emits = defineEmits<{
+  (event: "analyze-image", file: ImageFile): void;
   (event: "crop-file", file: ImageFile): void;
   (event: "delete-file", file: ImageFile): void;
   (event: "set-focus-tag", tag: string): void;
@@ -340,7 +341,7 @@ const links = computed(() => [
     disabled:
       [...props.file.highConfidenceTags, ...props.file.lowConfidenceTags]
         .length > 0,
-    click: () => fileStore.analyzeImage(props.file),
+    click: () => emits("analyze-image", props.file),
   },
 ]);
 </script>
