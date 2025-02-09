@@ -225,7 +225,7 @@
     @close="closeCropModal"
   />
   <PreviewModal
-    :open="!!removalTarget"
+    :open="!!removalTarget && !fileStore.acceptCutoutResults"
     :image="removalTarget"
     :preview="removalPreview"
     @save="resolveBgRemoval(true)"
@@ -320,9 +320,11 @@ onMounted(async () => {
   const threshold = recall("threshold");
   const kohya = recall("kohyaConfig");
   if (threshold) fileStore.setThreshold(threshold);
+  if (recall("autoTagMerge")) fileStore.autoTagMerge = true;
+  if (recall("strictDuplicates")) fileStore.strictDuplicates = true;
+  if (recall("acceptCutoutResults")) fileStore.acceptCutoutResults = true;
 
   if (kohya) {
-    console.log("Setting Kohya Config", kohya);
     await directoryStore.setKohyaConfig(kohya);
     if (activeDirectory) {
       directoryStore.activeDirectory = activeDirectory;
@@ -363,6 +365,9 @@ const removeBackground = async (file: ImageFile) => {
   if (previewPath) {
     removalPreview.value = previewPath;
     removalTarget.value = file;
+    if (fileStore.acceptCutoutResults) {
+      await resolveBgRemoval(true);
+    }
   }
   stopAnimation();
 };

@@ -30,15 +30,72 @@
         </div>
         <h3 class="text-lg p-2">Model Options</h3>
         <div class="pl-4 gap-2 flex flex-col gap-1">
-          <UCheckbox
-            v-model="fileStore.strictDuplicates"
-            label="Strict Duplicates"
-            :description="
-              fileStore.strictDuplicates
-                ? 'Only highlight key tags'
-                : 'Highlight all tags with a matching root word'
-            "
-          />
+          <label class="flex text-sm justify-start content-center gap-4">
+            <UToggle
+              v-model="fileStore.strictDuplicates"
+              label="Strict Duplicates"
+            />
+            Strict Duplicate Highlighting
+            <UTooltip
+              :text="
+                fileStore.strictDuplicates
+                  ? 'Only highlight key tags'
+                  : 'Highlight all tags with a matching root word'
+              "
+              :open-delay="250"
+              :popper="{ placement: 'top' }"
+            >
+              <span class="text-xs text-slate-300/60">
+                <UIcon
+                  name="fluent:question-circle-20-regular"
+                  class="w-4 h-4"
+                />
+              </span>
+            </UTooltip>
+          </label>
+          <label class="flex text-sm justify-start content-center gap-4">
+            <UToggle v-model="fileStore.autoTagMerge" label="Auto-Merge Tags" />
+            Auto-Merge Similar Tags
+            <UTooltip
+              :text="
+                fileStore.strictDuplicates
+                  ? 'Automatically merge similar tags after analysis'
+                  : 'Show all tags detected by the model'
+              "
+              :open-delay="250"
+              :popper="{ placement: 'top' }"
+            >
+              <span class="text-xs text-slate-300/60">
+                <UIcon
+                  name="fluent:question-circle-20-regular"
+                  class="w-4 h-4"
+                />
+              </span>
+            </UTooltip>
+          </label>
+          <label class="flex text-sm justify-start content-center gap-4">
+            <UToggle
+              v-model="fileStore.acceptCutoutResults"
+              label="Accept Cutout Results"
+            />
+            Accept Cutout Results
+            <UTooltip
+              :text="
+                fileStore.acceptCutoutResults
+                  ? 'Automatically accept background removal results'
+                  : 'Always prompt background removal results'
+              "
+              :open-delay="250"
+              :popper="{ placement: 'top' }"
+            >
+              <span class="text-xs text-slate-300/60">
+                <UIcon
+                  name="fluent:question-circle-20-regular"
+                  class="w-4 h-4"
+                />
+              </span>
+            </UTooltip>
+          </label>
         </div>
         <h2 class="text-lg p-2">Clean-up</h2>
         <div class="flex flex-col gap-2 pl-4">
@@ -64,8 +121,9 @@
               color="rose"
               :disabled="removedTags != null"
               @click="handleClean"
-              >Remove Orphaned Tags</UButton
             >
+              Remove Orphaned Tags
+            </UButton>
             <span class="pl-4">{{
               removedTags != null ? `Removed ${removedTags} files` : ""
             }}</span>
@@ -262,10 +320,12 @@
 </template>
 
 <script setup lang="ts">
+import { useRecall } from "~/pinia/recall";
 import { useDirectory } from "~/pinia/directory";
 import { useFiles } from "~/pinia/files";
 import { useTags } from "~/pinia/tags";
 import ATag from "./ATag.vue";
+const { store } = useRecall();
 const directoryStore = useDirectory();
 const { kohyaSettings } = storeToRefs(directoryStore);
 const fileStore = useFiles();
@@ -281,7 +341,6 @@ const {
   otherTags,
   availableCategories,
   customTags,
-  categoryColors,
 } = storeToRefs(tagStore);
 
 const emits = defineEmits(["filter", "close"]);
@@ -293,6 +352,12 @@ onMounted(() => {
   if (fileStore.filterPreview.size) {
     bulkTagList.value = new Set(fileStore.filterPreview);
   }
+});
+
+onBeforeUnmount(() => {
+  store("autoTagMerge", fileStore.autoTagMerge);
+  store("strictDuplicates", fileStore.strictDuplicates);
+  store("acceptCutoutResults", fileStore.acceptCutoutResults);
 });
 
 const threshold = ref<number>(0);

@@ -325,7 +325,6 @@ const updateDirectoryList = async (targetDir: string) => {
         });
       });
       options.value = opts;
-      console.log("options", opts);
     });
 };
 
@@ -391,7 +390,6 @@ const onSaveKohya = async () => {
   const configPath = await directoryStore.setFromConfig(current.value);
   store("directory", current.value);
   store("kohyaConfig", configPath);
-  console.log("kohyaConfig", configPath);
   mode.value = "view";
   loading.value = false;
 };

@@ -15,7 +15,6 @@ export default defineEventHandler(async (event: H3Event) => {
     }
     isValid = stats.isDirectory();
   });
-  console.log(`Fetching files from ${path}`);
 
   // format the files to be returned
   const files: Record<string, ImageFile> = {};

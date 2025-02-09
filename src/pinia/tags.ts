@@ -99,7 +99,6 @@ export const useTags = defineStore("tags", {
       const model = this.models.includes(this.activeModel)
         ? this.activeModel
         : this.models[0];
-      console.log("Fetching tags for model", model);
       const tags = await $fetch<{ name: string; category: number }[]>(
         `/inferrence/tags`,
         {

@@ -199,9 +199,6 @@ import TagInput from "~/components/ui/TagInput.vue";
 import { useMakeSquare } from "~/composables/useMakeSquare";
 const { isSquare, isSmall, isMedium, isLarge } = useMakeSquare();
 
-import { useTagMerger } from "#build/imports";
-const { mergeTags } = useTagMerger();
-
 import { useLoaders, Prefixes } from "~/pinia/loaders";
 const loaders = useLoaders();
 
@@ -253,14 +250,7 @@ onMounted(() => {
 });
 
 const attemptMergeTags = async () => {
-  loaders.start(Prefixes.TAGMERGE + props.file.name);
-  const tags = mergeTags(props.file.highConfidenceTags);
-  if (tags.newTags.length) fileStore.addTag(props.file, tags.newTags);
-  if (tags.removedTags.length)
-    fileStore.removeTag(props.file, tags.removedTags);
-
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  loaders.end(Prefixes.TAGMERGE + props.file.name);
+  fileStore.mergeTags(props.file);
 };
 
 const hasDuplicates = computed(() => {

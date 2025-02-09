@@ -1,4 +1,5 @@
 import argparse
+import io
 from pathlib import Path
 from rembg import remove, new_session
 from PIL import Image
@@ -77,15 +78,16 @@ def rmbg_endpoint():
         return jsonify({"status": "error", "message": "file is not an image"}), 400
     img = Image.open(data["path"])
     # get image color mode: "RGB", "RGBA"
-    cs = img.mode
     session = new_session("birefnet-portrait")
-    output = remove(img, bgcolor=(255, 255, 255), session=session)
-    if cs == "RGB":
+    output = remove(img, bgcolor=(255, 255, 255, 255), session=session)
+    # convert the output image to RGB
+    if isinstance(output, Image.Image):
         output = output.convert("RGB")
-    # convert the output image to match the input image format
-    out_path = data["path"] + ".rmbg" + ext
-    output.save(out_path)
-    return jsonify({"result_path": out_path, "status": "success"}), 200
+        # convert the output image to match the input image format
+        out_path = data["path"] + ".rmbg" + ext
+        output.save(out_path)
+        return jsonify({"result_path": out_path, "status": "success"}), 200
+    return jsonify({"status": "error", "message": "failed to remove background"}), 500
 
 
 if __name__ == "__main__":

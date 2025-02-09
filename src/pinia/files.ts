@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { useTagMerger } from "@/composables/useTagMerger";
 import { useLoaders, Prefixes } from "./loaders";
 import { useRecall } from "./recall";
-const { hasRootTag } = useTagMerger();
+const { hasRootTag, mergeTags } = useTagMerger();
 const worker = new Worker(
   new URL("../assets/workers/file.worker.ts", import.meta.url),
   { type: "module" },
@@ -24,6 +24,8 @@ interface State {
 
   sort: (typeof Sorts)[number];
   strictDuplicates: boolean;
+  autoTagMerge: boolean;
+  acceptCutoutResults: boolean;
 
   threshold: number;
 }
@@ -41,7 +43,11 @@ export const useFiles = defineStore("files", {
     appliedFilters: new Set<string>(),
     filterPreview: new Set<string>(),
     sort: "name",
+
     strictDuplicates: false,
+    autoTagMerge: false,
+    acceptCutoutResults: false,
+
     threshold: 0.35,
   }),
 
@@ -318,7 +324,6 @@ export const useFiles = defineStore("files", {
           fileIndex
         ].lowConfidenceTags.filter((t) => !tags.includes(t));
       }
-      console.log("Adding tags", tags, "to", file.path);
 
       // update server
       await $fetch("/api/tags", {
@@ -352,7 +357,6 @@ export const useFiles = defineStore("files", {
           this.files[fileIndex].lowConfidenceTags.push(t);
         }
       }
-      console.log("Removing tag", tags, "from", file.path);
 
       // update server
       await $fetch("/api/tags", {
@@ -396,7 +400,6 @@ export const useFiles = defineStore("files", {
       loaders.dequeue(`${Prefixes.ANALYZE}${file.name}`);
 
       loaders.start(`${Prefixes.ANALYZE}${file.name}`);
-      console.log(`Analyzing image: ${file.path}`);
       const json = await $fetch<{
         high: Record<string, number>;
         low: Record<string, number>;
@@ -445,12 +448,25 @@ export const useFiles = defineStore("files", {
       if (fileIndex !== -1) {
         this.files[fileIndex] = file;
       }
+      if (this.autoTagMerge) {
+        this.mergeTags(file);
+      }
       loaders.end(`${Prefixes.ANALYZE}${file.name}`);
+    },
+
+    async mergeTags(file: ImageFile) {
+      const loaders = useLoaders();
+      loaders.start(Prefixes.TAGMERGE + file.name);
+      const tags = mergeTags(file.highConfidenceTags);
+      if (tags.newTags.length) this.addTag(file, tags.newTags);
+      if (tags.removedTags.length) this.removeTag(file, tags.removedTags);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      loaders.end(Prefixes.TAGMERGE + file.name);
     },
 
     async analyzeDirectory() {
       const loaders = useLoaders();
-      console.log("Analyzing all images");
       const queue = [];
       // visually queue all files for analysis
       for (const file of this.files) {
@@ -470,7 +486,6 @@ export const useFiles = defineStore("files", {
           );
         }
       }
-      console.log("Finished analyzing all images");
     },
 
     async uploadFiles(files: FileList) {

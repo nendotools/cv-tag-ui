@@ -170,7 +170,6 @@ export const useDirectory = defineStore("directory", {
 
     async cleanDirectory(path?: string) {
       if (!path) path = this.workingDirectory;
-      console.log(`Cleaning directory: ${path}`);
       const res = await $fetch<{
         count: number;
       }>(`/api/directories/clean`, {

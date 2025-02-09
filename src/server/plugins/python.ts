@@ -13,7 +13,6 @@ export default defineNitroPlugin((nitro) => {
     if (app.py) {
       return;
     }
-    console.log(process.env.NODE_ENV);
     const pythonUtilPath = useRuntimeConfig().pythonUtilPath;
     const cmdArr = [`${pythonUtilPath}/app.py`];
     app.py = spawn(`python`, cmdArr);

@@ -14,13 +14,10 @@ export default defineEventHandler(async (event: H3Event) => {
 
   const createdPaths: ImageFile[] = [];
   for (const file of files) {
-    console.log(`Finding file at ${path}`);
     if (fs.existsSync(`${path}/${file.name}`)) {
-      console.log(`File already exists at ${path}/${file.name}`);
       continue;
     }
 
-    console.log(`Uploading file to ${path}/${file.name}`);
     fs.writeFileSync(
       `${path}/${file.name}`,
       Buffer.from(await file.arrayBuffer()),
