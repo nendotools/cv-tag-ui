@@ -1,4 +1,4 @@
-export { MIME_TYPES, ImageFile };
+export { MIME_TYPES, Extensions, ImageExtensions, ImageFile };
 
 declare global {
   enum MIME_TYPES {
@@ -8,6 +8,14 @@ declare global {
     PNG = "image/png",
     BMP = "image/bmp",
   }
+  enum ImageExtensions {
+    JPG = ".jpg",
+    JPEG = ".jpeg",
+    WEBP = ".webp",
+    PNG = ".png",
+    BMP = ".bmp",
+  }
+  Extionsions = [".jpg", ".jpeg", ".webp", ".png", ".bmp"];
   interface ImageFile {
     path: string;
     name: string;

@@ -1,6 +1,7 @@
 import { defineEventHandler, H3Event } from "h3";
 import * as fs from "fs";
 
+// Provides directory summary information for image metadata
 export default defineEventHandler(async (event: H3Event) => {
   let { path } = getQuery<{ path: string }>(event);
   path = decodeURIComponent(path);
@@ -14,7 +15,9 @@ export default defineEventHandler(async (event: H3Event) => {
   });
   let [images, tags, scans] = [0, 0, 0];
   const files = fs.readdirSync(path);
-  const imageFiles = files.filter((file) => /\.(jpe?g|png|gif|bmp|webp)$/i.test(file));
+  const imageFiles = files.filter((file) =>
+    /\.(jpe?g|png|gif|bmp|webp)$/i.test(file),
+  );
   for (const file of imageFiles) {
     const fileBase = file.split(".")[0];
     images += 1;
@@ -25,7 +28,6 @@ export default defineEventHandler(async (event: H3Event) => {
       scans += 1;
     }
   }
-
 
   setHeader(event, "Status", isValid ? "200" : "400");
   setHeader(event, "Content-Type", "application/json");

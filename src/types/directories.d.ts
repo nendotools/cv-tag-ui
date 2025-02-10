@@ -9,4 +9,21 @@ declare global {
     tags: number;
     scans: number;
   }
+
+  interface FSItem {
+    type: "directory" | "file";
+    fullPath: string;
+    hidden?: boolean;
+    name: string;
+  }
+
+  interface FSDirectory extends FSItem {
+    type: "directory";
+  }
+
+  interface FSFile extends FSItem {
+    type: "file";
+    extension: string;
+    isKohya: boolean;
+  }
 }

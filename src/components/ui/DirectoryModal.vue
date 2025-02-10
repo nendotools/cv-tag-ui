@@ -12,6 +12,8 @@
         </h2>
       </template>
 
+      <FileBrowser />
+
       <div v-if="mode === 'view'" class="flex flex-col gap-2 space-x-2">
         <div v-if="directoryStore.kohyaConfig" class="flex flex-col">
           <div class="flex flex-row justify-between">
@@ -235,6 +237,7 @@ import { KOHYA_FOLDER_PATTERN, useDirectory } from "~/pinia/directory";
 const directoryStore = useDirectory();
 
 import { useTags } from "~/pinia/tags";
+import FileBrowser from "../browser/FileBrowser.vue";
 const { rawTags } = storeToRefs(useTags());
 
 const emit = defineEmits(["save"]);

@@ -18,6 +18,7 @@ export const useTagMerger = () => {
     "nose",
     "ears",
     "legs",
+    "feet",
     "breasts",
     "choker",
     "ribbon",

@@ -200,5 +200,12 @@ export const useDirectory = defineStore("directory", {
         prunedFiles: res.pruned_files,
       };
     },
+
+    async listDirectory(path: string) {
+      const res = await $fetch<{ contents: (FSDirectory | FSFile)[] }>(
+        `/api/directories/list?path=${path}`,
+      );
+      return res.contents;
+    },
   },
 });
