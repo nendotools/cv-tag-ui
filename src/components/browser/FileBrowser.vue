@@ -79,19 +79,48 @@
     </div>
   </div>
 
-  <div class="flex justify-end gap-2 my-2">
-    <UButton color="gray" @click="() => console.log('cance')"> Cancel </UButton>
-    <UButton v-if="selectedConfig" @click="() => console.log(selected)">
-      Load Config
-    </UButton>
-    <UButton
-      v-else
-      :variant="selected ? 'solid' : 'outline'"
-      :disabled="!selected"
-      @click="() => console.log(selected)"
-    >
-      Use Directory
-    </UButton>
+  <div ref="controls" class="flex justify-between gap-2 my-2">
+    <div class="flex gap-2">
+      <UTooltip text="toggle hidden files" :popper="{ placement: 'top' }">
+        <UButton
+          color="gray"
+          :icon="
+            !showHidden
+              ? 'fluent:eye-hide-20-regular'
+              : 'fluent:eye-show-20-regular'
+          "
+          @click="() => (showHidden = !showHidden)"
+        />
+      </UTooltip>
+      <UTooltip text="toggle selectable files" :popper="{ placement: 'top' }">
+        <UButton
+          color="gray"
+          :icon="
+            showUnselectable
+              ? 'fluent:cursor-prohibited-20-regular'
+              : 'fluent:cursor-click-20-regular'
+          "
+          @click="() => (showUnselectable = !showUnselectable)"
+        />
+      </UTooltip>
+    </div>
+    <div class="flex gap-2">
+      <UButton color="gray" @click="() => $emit('cancel')"> Cancel </UButton>
+      <UButton
+        v-if="selectedConfig"
+        @click="() => $emit('loadConfig', selection)"
+      >
+        Load Config
+      </UButton>
+      <UButton
+        v-else
+        :variant="activePath !== '/' ? 'solid' : 'outline'"
+        :disabled="activePath === '/'"
+        @click="() => $emit('save', selection)"
+      >
+        Use Directory
+      </UButton>
+    </div>
   </div>
 </template>
 
@@ -101,9 +130,18 @@
 import { useDirectory } from "~/pinia/directory";
 const directoryStore = useDirectory();
 
+const props = defineProps<{
+  current: string;
+}>();
+const emits = defineEmits(["save", "loadConfig", "cancel"]);
+onMounted(() => {
+  activePath.value = props.current || "/";
+});
+
 const topLevel = computed(() => activePath.value === "/");
 const loading = ref<boolean>(false);
 const showHidden = ref<boolean>(false);
+const showUnselectable = ref<boolean>(false);
 
 const activePath = ref<string>("/");
 const shortPath = computed(() => {
@@ -122,6 +160,9 @@ const shortPath = computed(() => {
 });
 
 const selected = ref<string | null>(null);
+const selection = computed(() => {
+  return [activePath.value, selected.value].join("/");
+});
 const selectedConfig = computed(() => {
   if (!selected.value) {
     return false;
@@ -137,6 +178,9 @@ const filteredContents = computed(() => {
   return folderContents.value
     .filter((item) => {
       if (item.name.startsWith(".") && !showHidden.value) {
+        return false;
+      }
+      if (item.type === "file" && !item.isKohya && !showUnselectable.value) {
         return false;
       }
       return true;
@@ -184,7 +228,15 @@ const selectItem = async (item: FSDirectory | FSFile) => {
   if (activeClick && item.name === selected.value) {
     activePath.value = item.fullPath;
     loading.value = true;
-    folderContents.value = await directoryStore.listDirectory(activePath.value);
+    if (item.type === "file") {
+      selected.value = null;
+      emits("loadConfig", item.fullPath);
+      return;
+    } else {
+      folderContents.value = await directoryStore.listDirectory(
+        activePath.value,
+      );
+    }
     loading.value = false;
     selected.value = null;
     return;

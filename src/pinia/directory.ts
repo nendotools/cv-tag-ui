@@ -108,14 +108,14 @@ export const useDirectory = defineStore("directory", {
       }
     },
 
-    async setFromConfig(configDir: string) {
+    async setFromConfig(configPath: string) {
       // call api to get the kohya config, set the base directory from training data dir
       const res = await $fetch<Record<string, any>>(`/api/directories/kohya`, {
         headers: {
           "Content-Type": "application/json",
         },
         query: {
-          path: encodeURIComponent(configDir),
+          path: encodeURIComponent(configPath),
         },
       });
 

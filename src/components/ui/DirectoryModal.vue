@@ -12,7 +12,13 @@
         </h2>
       </template>
 
-      <FileBrowser />
+      <FileBrowser
+        v-if="mode === 'edit'"
+        :current="directoryStore.baseDirectory"
+        @cancel="() => (mode = 'view')"
+        @save="onSaveCurrent"
+        @loadConfig="onSaveKohya"
+      />
 
       <div v-if="mode === 'view'" class="flex flex-col gap-2 space-x-2">
         <div v-if="directoryStore.kohyaConfig" class="flex flex-col">
@@ -44,72 +50,11 @@
           </div>
         </div>
       </div>
-      <div v-if="mode === 'edit'" class="flex flex-col gap-2 space-x-2">
-        <div>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            Select the directory where your images are stored:
-          </p>
-        </div>
-        <UInputMenu
-          class="flex-1"
-          placeholder="Directory path"
-          :options="[...options, { id: 'cur', label: current }]"
-          value-attribute="id"
-          option-attribute="id"
-          :search-attributes="['id']"
-          :popper="{
-            placement: 'top-end',
-          }"
-          v-model="current"
-          @input="onInput"
-        >
-          <template #option="{ option: dir }">
-            <UIcon
-              v-if="dir.isKohya"
-              name="fluent:tag-20-regular"
-              class="mr-2"
-            />
-            <span class="truncate">{{ dir.label }}</span>
-          </template>
-        </UInputMenu>
-        <div class="w-full flex flex-row justify-end gap-2">
-          <UButton
-            v-if="currentInputKohya"
-            color="teal"
-            :loading="loading"
-            :disabled="loading"
-            @click="onSaveKohya"
-          >
-            Load Kohya Config
-          </UButton>
-          <UButton
-            v-if="kohyaParent && refocusing"
-            color="emerald"
-            :loading="loading"
-            :disabled="loading"
-            @click="onSaveParent"
-          >
-            Use Parent
-          </UButton>
-          <UButton
-            v-if="refocusing"
-            :loading="loading"
-            :disabled="loading"
-            @click="onSaveCurrent"
-          >
-            Use Current
-          </UButton>
-          <UButton
-            v-if="createNew"
-            :loading="loading"
-            :disabled="loading"
-            @click="startCreate"
-          >
-            Create New
-          </UButton>
-        </div>
-      </div>
-      <div v-if="subdirectories" class="flex flex-col gap-2 mt-4">
+
+      <div
+        v-if="mode === 'view' && subdirectories"
+        class="flex flex-col gap-2 mt-4"
+      >
         <div
           v-for="(opt, index) in directoryStore.subDirectories"
           :key="index"
@@ -167,56 +112,50 @@
             </UBadge>
           </UTooltip>
         </div>
-        <div
-          v-if="subdirectories && !showCreate"
-          class="tw-full grid grid-cols-5 gap-2 items-center"
-        >
-          <UButton
-            class="col-span-2"
-            icon="fluent:folder-add-20-regular"
-            @click="startCreate"
-          >
-            Create Directory
-          </UButton>
-        </div>
-        <div
-          v-if="subdirectories && showCreate"
-          class="tw-full grid grid-cols-5 gap-2 items-center"
-        >
-          <UButton
-            icon="fluent:folder-prohibited-20-regular"
-            color="rose"
-            @click="cancelCreate"
-          >
-            Cancel
-          </UButton>
-          <UButton icon="fluent:folder-add-20-regular" @click="saveCreate">
-            Create
-          </UButton>
-          <UInput
-            class="col-span-3"
-            placeholder="New Directory Name"
-            v-model="newDirname"
-            @input="validateName"
-          >
-            <template #trailing>
-              <UBadge
-                v-if="isKohya"
-                :color="isValidTarget ? 'emerald' : 'rose'"
-                :variant="isValidTarget ? 'subtle' : 'solid'"
-                icon="fluent:tag-20-regular"
-              >
-                {{ kohyaTarget }}
-              </UBadge>
-              <div v-else></div>
-            </template>
-          </UInput>
-        </div>
       </div>
 
-      <template #footer>
-        <div class="flex justify-end gap-4">
-          <UButton @click="onSave"> Save </UButton>
+      <template v-if="mode === 'view'" #footer>
+        <div class="flex justify-between gap-4">
+          <div
+            v-if="subdirectories && !showCreate"
+            class="tw-full grid gap-2 items-center"
+          >
+            <UButton icon="fluent:folder-add-20-regular" @click="startCreate">
+              Create Directory
+            </UButton>
+          </div>
+          <div
+            v-if="subdirectories && showCreate"
+            class="tw-full flex gap-2 items-center"
+          >
+            <UButton
+              icon="fluent:folder-prohibited-20-regular"
+              color="rose"
+              @click="cancelCreate"
+            />
+            <UButton icon="fluent:folder-add-20-regular" @click="saveCreate">
+              Create
+            </UButton>
+            <UInput
+              class="col-span-3"
+              placeholder="New Directory Name"
+              v-model="newDirname"
+              @input="validateName"
+            >
+              <template #trailing>
+                <UBadge
+                  v-if="isKohya"
+                  :color="isValidTarget ? 'emerald' : 'rose'"
+                  :variant="isValidTarget ? 'subtle' : 'solid'"
+                  icon="fluent:tag-20-regular"
+                >
+                  {{ kohyaTarget }}
+                </UBadge>
+                <div v-else></div>
+              </template>
+            </UInput>
+          </div>
+          <UButton v-if="!showCreate" @click="onSave"> Save </UButton>
         </div>
       </template>
     </UCard>
@@ -244,7 +183,7 @@ const emit = defineEmits(["save"]);
 onMounted(() => {
   loading.value = false;
   current.value = directoryStore.baseDirectory;
-  updateDirectoryList(parentDir.value);
+  updateDirectoryList(current.value);
 
   if (directoryStore.relatedDirectories.length) {
     directoryStore.scanDirectories();
@@ -256,12 +195,6 @@ const isKohya = ref(false);
 const showCreate = ref(false);
 const kohyaTarget = ref<string>("");
 const newDirname = ref<string>("");
-const currentInputKohya = computed(() => {
-  if (directoryStore.baseDirectory === current.value) return false;
-  return (
-    options.value.find((opt) => opt.id === current.value)?.isKohya || false
-  );
-});
 const isValidTarget = computed(() => {
   if (isKohya.value) {
     return rawTags.value.includes(kohyaTarget.value);
@@ -298,18 +231,6 @@ const loading = ref(false);
 
 const subdirectories = computed(() => {
   return directoryStore.relatedDirectories;
-});
-const refocusing = computed(() => {
-  return current.value !== directoryStore.baseDirectory && !createNew.value;
-});
-const parentDir = computed(() =>
-  current.value.split("/").slice(0, -1).join("/"),
-);
-const kohyaParent = computed(() => {
-  if (!options.value.length) return false;
-  return options.value.some((opt) =>
-    KOHYA_FOLDER_PATTERN.test(opt.id.split("/").pop() || ""),
-  );
 });
 
 const updateDirectoryList = async (targetDir: string) => {
@@ -351,23 +272,6 @@ watch(
 );
 
 const createNew = ref(false);
-// on input, if the value ends in a slash, update the current value and fetch directories from the server
-const onInput = (e: Event) => {
-  const target = e.target as HTMLInputElement;
-
-  if (target.value.endsWith("/")) {
-    updateDirectoryList(target.value.slice(0, -1));
-  }
-
-  const latest = current.value.split("/").pop();
-  if (
-    latest &&
-    latest.length > 0 &&
-    !options.value.map((v) => v.id).includes(latest)
-  ) {
-    createNew.value = true;
-  }
-};
 
 const setActive = (dirname: string) => {
   directoryStore.activeDirectory = dirname;
@@ -379,32 +283,24 @@ const onSave = async () => {
   emit("save");
 };
 
-const onSaveCurrent = async () => {
+const onSaveCurrent = async (path: string) => {
   loading.value = true;
-  await directoryStore.setDirectory(current.value);
-  store("directory", current.value);
+  // remove trailing slash
+  path = path.replace(/\/$/, "");
+  directoryStore.setDirectory(path, true);
+  updateDirectoryList(path);
+  store("directory", path);
   remove("kohyaConfig");
   mode.value = "view";
   loading.value = false;
 };
 
-const onSaveKohya = async () => {
+const onSaveKohya = async (config: string) => {
   loading.value = true;
-  const configPath = await directoryStore.setFromConfig(current.value);
-  store("directory", current.value);
-  store("kohyaConfig", configPath);
-  mode.value = "view";
-  loading.value = false;
-};
-
-const onSaveParent = async () => {
-  loading.value = true;
-  options.value = [];
-  current.value = current.value.slice(0, current.value.lastIndexOf("/"));
-  updateDirectoryList(parentDir.value);
-  await directoryStore.setDirectory(current.value, true);
-  store("directory", current.value);
-  remove("kohyaConfig");
+  await directoryStore.setFromConfig(config);
+  const configDir = config.split("/").slice(0, -1).join("/");
+  store("directory", configDir);
+  store("kohyaConfig", config);
   mode.value = "view";
   loading.value = false;
 };
