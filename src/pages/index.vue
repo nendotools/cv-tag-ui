@@ -322,6 +322,7 @@ onMounted(async () => {
   const kohya = recall("kohyaConfig");
   if (threshold) fileStore.setThreshold(threshold);
   if (recall("autoTagMerge")) fileStore.autoTagMerge = true;
+  if (recall("scanOnUpload")) fileStore.scanOnUpload = true;
   if (recall("strictDuplicates")) fileStore.strictDuplicates = true;
   if (recall("acceptCutoutResults")) fileStore.acceptCutoutResults = true;
 

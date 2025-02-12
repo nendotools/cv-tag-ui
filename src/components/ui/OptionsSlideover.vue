@@ -54,6 +54,26 @@
             </UTooltip>
           </label>
           <label class="flex text-sm justify-start content-center gap-4">
+            <UToggle v-model="fileStore.scanOnUpload" label="Scan on Upload" />
+            Scan on Upload
+            <UTooltip
+              :text="
+                fileStore.scanOnUpload
+                  ? 'Scan images after uploading'
+                  : 'Do not scan images after uploading'
+              "
+              :open-delay="250"
+              :popper="{ placement: 'top' }"
+            >
+              <span class="text-xs text-slate-300/60">
+                <UIcon
+                  name="fluent:question-circle-20-regular"
+                  class="w-4 h-4"
+                />
+              </span>
+            </UTooltip>
+          </label>
+          <label class="flex text-sm justify-start content-center gap-4">
             <UToggle v-model="fileStore.autoTagMerge" label="Auto-Merge Tags" />
             Auto-Merge Similar Tags
             <UTooltip
@@ -356,6 +376,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   store("autoTagMerge", fileStore.autoTagMerge);
+  store("scanOnUpload", fileStore.scanOnUpload);
   store("strictDuplicates", fileStore.strictDuplicates);
   store("acceptCutoutResults", fileStore.acceptCutoutResults);
 });

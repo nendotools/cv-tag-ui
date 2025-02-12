@@ -45,53 +45,6 @@
           </div>
           <div
             v-show="getTagOptCache() === OptCategories.ASSIGNED"
-            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 grid-rows-5 gap-2"
-          >
-            <ATag
-              v-for="tag in [...file?.highConfidenceTags]"
-              :key="tag"
-              :label="tag"
-              :exists="true"
-              :simple="mode !== 'tag'"
-              :duplicates="imageDuplicateTags[file.hash]"
-              :class="{ 'cursor-pointer': mode === 'view' }"
-              @delete="fileStore.removeTag(file, [tag])"
-              @click.stop="$emit('set-focus-tag', tag)"
-            />
-
-            <div v-if="!file.tags.length && !file?.highConfidenceTags?.length">
-              <p class="text-zinc-50/25">None</p>
-            </div>
-
-            <div class="col-start-1 col-span-full flex flex-row gap-2 mt-4">
-              <h4>Add Tags</h4>
-              <TagInput
-                :tags="file.highConfidenceTags"
-                @add="(tag: string) => fileStore.addTag(file, [tag])"
-              />
-            </div>
-          </div>
-          <div
-            v-show="getTagOptCache() === OptCategories.EXCLUDED"
-            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 grid-rows-5 gap-2"
-          >
-            <ATag
-              v-for="tag in [...file?.lowConfidenceTags]"
-              :key="tag"
-              :label="tag"
-              :exists="false"
-              :simple="mode !== 'tag'"
-              :class="{ 'cursor-pointer': mode === 'view' }"
-              @add="fileStore.addTag(file, [tag])"
-              @click.stop="$emit('set-focus-tag', tag)"
-            />
-
-            <div v-if="!file?.lowConfidenceTags?.length">
-              <p class="text-zinc-50/25">None</p>
-            </div>
-          </div>
-          <div
-            v-show="getTagOptCache() === OptCategories.TOOLS"
             class="ml-4 grid grid-rows-1 grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2 m-4"
           >
             <div
@@ -109,6 +62,14 @@
                 @delete="fileStore.removeTag(file, [tag])"
                 @click.stop="$emit('set-focus-tag', tag)"
               />
+
+              <div class="col-start-1 col-span-full flex flex-row gap-2 mt-4">
+                <h4>Add Tags</h4>
+                <TagInput
+                  :tags="file.highConfidenceTags"
+                  @add="(tag: string) => fileStore.addTag(file, [tag])"
+                />
+              </div>
             </div>
             <div class="flex flex-col items-stretch gap-2 m-4">
               <h3 class="text-sm font-semibold text-center">Tagging</h3>
@@ -186,6 +147,44 @@
               </UButton>
             </div>
           </div>
+
+          <div
+            v-show="getTagOptCache() === OptCategories.EXCLUDED"
+            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 grid-rows-5 gap-2"
+          >
+            <ATag
+              v-for="tag in [...file?.lowConfidenceTags]"
+              :key="tag"
+              :label="tag"
+              :exists="false"
+              :simple="mode !== 'tag'"
+              :class="{ 'cursor-pointer': mode === 'view' }"
+              @add="fileStore.addTag(file, [tag])"
+              @click.stop="$emit('set-focus-tag', tag)"
+            />
+
+            <div v-if="!file?.lowConfidenceTags?.length">
+              <p class="text-zinc-50/25">None</p>
+            </div>
+          </div>
+
+          <div
+            v-show="getTagOptCache() === OptCategories.MOVE"
+            class="m-4 flex flex-col max-w-xs gap-2"
+          >
+            <UButton
+              v-for="(opt, index) in adjacentFolders"
+              :key="index"
+              icon="fluent:folder-20-regular"
+              color="indigo"
+              class="rounded-full p-2"
+              variant="solid"
+              size="xs"
+              @click="fileStore.moveFiles(file, opt.path)"
+            >
+              Move to {{ opt.name }}
+            </UButton>
+          </div>
         </div>
       </div>
     </div>
@@ -195,6 +194,7 @@
 <script lang="ts" setup>
 import ATag from "~/components/ui/ATag.vue";
 import TagInput from "~/components/ui/TagInput.vue";
+import OrientationDisplay from "./OrientationDisplay.vue";
 
 import { useMakeSquare } from "~/composables/useMakeSquare";
 const { isSquare, isSmall, isMedium, isLarge } = useMakeSquare();
@@ -202,8 +202,17 @@ const { isSquare, isSmall, isMedium, isLarge } = useMakeSquare();
 import { useLoaders, Prefixes } from "~/pinia/loaders";
 const loaders = useLoaders();
 
+import { useDirectory } from "~/pinia/directory";
+const directoryStore = useDirectory();
+const adjacentFolders = computed(() => {
+  const dirs = {
+    ...directoryStore.subDirectories,
+  };
+  delete dirs[directoryStore.activeDirectory];
+  return dirs;
+});
+
 import { useFiles } from "@/pinia/files";
-import OrientationDisplay from "./OrientationDisplay.vue";
 const fileStore = useFiles();
 
 const { imageDuplicateTags } = storeToRefs(fileStore);
@@ -233,21 +242,15 @@ enum OptCategories {
   RANK = "rank",
   ASSIGNED = "assigned",
   EXCLUDED = "excluded",
-  TOOLS = "tools",
+  MOVE = "move",
 }
-const tagOptCache = ref<OptCategories>(OptCategories.TOOLS);
+const tagOptCache = ref<OptCategories>(OptCategories.ASSIGNED);
 const setMenuOptCache = (value: OptCategories) => {
   tagOptCache.value = value;
 };
 const getTagOptCache = () => tagOptCache.value || OptCategories.ASSIGNED;
 const duplicateTags = computed(() => {
   return imageDuplicateTags.value[props.file.hash] || [];
-});
-
-onMounted(() => {
-  if (props.file.highConfidenceTags.length)
-    setMenuOptCache(OptCategories.ASSIGNED);
-  else setMenuOptCache(OptCategories.TOOLS);
 });
 
 const attemptMergeTags = async () => {
@@ -319,10 +322,10 @@ const links = computed(() => [
     click: () => setMenuOptCache(OptCategories.EXCLUDED),
   },
   {
-    label: "Tools",
-    icon: "fluent:developer-board-lightning-toolbox-20-regular",
-    active: getTagOptCache() === OptCategories.TOOLS,
-    click: () => setMenuOptCache(OptCategories.TOOLS),
+    label: "Move",
+    icon: "fluent:folder-move-20-regular",
+    active: getTagOptCache() === OptCategories.MOVE,
+    click: () => setMenuOptCache(OptCategories.MOVE),
   },
   {
     label: "Scan",

@@ -1,9 +1,5 @@
 import { defineEventHandler, H3Event, readBody } from "h3";
-import { createHash } from "crypto";
-import imageSize from "image-size";
 import * as fs from "fs";
-
-const Extensions = ["jpg", "jpeg", "png", "bmp", "webp"] as const;
 
 export default defineEventHandler(async (event: H3Event) => {
   const { path, target, preserve } = await readBody(event);
@@ -34,10 +30,16 @@ export default defineEventHandler(async (event: H3Event) => {
     fs.renameSync(path, `${target}/${fileName}`);
     // handle .txt and .json files
     if (fs.existsSync(`${target}/${fileName}.txt`)) {
-      fs.renameSync(`${basePath + baseFileName}.txt`, `${target}/${baseFileName}.txt`);
+      fs.renameSync(
+        `${basePath + baseFileName}.txt`,
+        `${target}/${baseFileName}.txt`,
+      );
     }
     if (fs.existsSync(`${target}/${fileName}.json`)) {
-      fs.renameSync(`${basePath + baseFileName}.json`, `${target}/${baseFileName}.json`);
+      fs.renameSync(
+        `${basePath + baseFileName}.json`,
+        `${target}/${baseFileName}.json`,
+      );
     }
   }
 

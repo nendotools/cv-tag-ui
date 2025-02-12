@@ -26,6 +26,7 @@ interface State {
   strictDuplicates: boolean;
   autoTagMerge: boolean;
   acceptCutoutResults: boolean;
+  scanOnUpload: boolean;
 
   threshold: number;
 }
@@ -47,6 +48,7 @@ export const useFiles = defineStore("files", {
     strictDuplicates: false,
     autoTagMerge: false,
     acceptCutoutResults: false,
+    scanOnUpload: true,
 
     threshold: 0.35,
   }),
@@ -503,6 +505,11 @@ export const useFiles = defineStore("files", {
         this.files.unshift(file);
       }
 
+      if (!this.scanOnUpload) return;
+      const loaders = useLoaders();
+      for (const file of response.files) {
+        loaders.enqueue(`${Prefixes.ANALYZE}${file.name}`);
+      }
       for (const file of response.files) {
         await this.analyzeImage(file);
       }
