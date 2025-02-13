@@ -217,6 +217,26 @@
     </div>
   </div>
 
+  <UNotifications />
+  <div
+    v-if="loaders.getMax(Prefixes.ANALYZE)"
+    class="fixed bottom-4 right-12 w-1/4"
+  >
+    <UNotification :id="1" :timeout="0" title="Analyzing Images">
+      <template #description>
+        <div class="flex flex-col gap-2">
+          items remaining: {{ loaders.analyzeQueue }}/{{
+            loaders.getMax(Prefixes.ANALYZE)
+          }}
+          <UProgress
+            :value="loaders.getMax(Prefixes.ANALYZE) - loaders.analyzeQueue"
+            :max="loaders.getMax(Prefixes.ANALYZE)"
+          />
+        </div>
+      </template>
+    </UNotification>
+  </div>
+
   <UModals />
   <USlideovers />
   <CropModal

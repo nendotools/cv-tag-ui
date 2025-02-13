@@ -1,4 +1,3 @@
-from pandas._config.config import config_prefix
 from models import Model, Models
 from tags import Tagger
 
@@ -40,7 +39,11 @@ class Interrogator:
         if not self.model or not self.tags:
             return {"error": "model not loaded"}
         if not self.session:
-            self.session = rt.InferenceSession(self.model.model_path)
+            prov = rt.get_available_providers()
+            if "CUDAExecutionProvider" in prov:
+                self.session = rt.InferenceSession(self.model.model_path, providers=["CUDAExecutionProvider"])
+            else:
+                self.session = rt.InferenceSession(self.model.model_path, providers=["CPUExecutionProvider"])
         _, height, _, _ = self.session.get_inputs()[0].shape
         self.model_target_size = height
 

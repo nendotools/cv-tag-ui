@@ -5,6 +5,7 @@ export const useTagMerger = () => {
     "pubic hair",
     "hair",
     "hair bun",
+    "hair ornament",
     "braids",
     "braid",
     "twintails",
@@ -92,6 +93,7 @@ export const useTagMerger = () => {
     "fence",
     "border",
     "sunlight",
+    "flower",
   ];
 
   const categories = {
@@ -139,8 +141,10 @@ export const useTagMerger = () => {
     for (const word of rootTags) {
       if (tag.endsWith(word)) {
         if (tag !== word && !tag.includes(" " + word)) continue;
-        if (tag.endsWith(`on ${word}`)) continue;
+        if (tag.endsWith(` on ${word}`)) continue;
         if (tag.endsWith(`ing ${word}`)) continue;
+        if (tag.endsWith(` with ${word}`)) continue;
+        if (tag.endsWith(` own ${word}`)) continue;
         return true;
       }
     }
@@ -160,7 +164,12 @@ export const useTagMerger = () => {
           }
 
           // add existing rootTag word to list if found as part of a descriptor
-          if (tag.endsWith(`on ${word}`) || tag.endsWith(`ing ${word}`)) {
+          if (
+            tag.endsWith(` on ${word}`) ||
+            tag.endsWith(`ing ${word}`) ||
+            tag.endsWith(` with ${word}`) ||
+            tag.endsWith(` own ${word}`)
+          ) {
             foundTags[word] = true;
             continue;
           }
@@ -190,9 +199,13 @@ export const useTagMerger = () => {
     for (const word of rootTags) {
       for (const tag of tags) {
         if (tag.endsWith(word)) {
+          // if the tag matches a different word, skip it
+          if (rootTags.indexOf(tag) > -1 && tag !== word) continue;
           if (tag !== word && !tag.includes(" " + word)) continue;
-          if (tag.endsWith(`on ${word}`)) continue;
+          if (tag.endsWith(` on ${word}`)) continue;
           if (tag.endsWith(`ing ${word}`)) continue;
+          if (tag.endsWith(` with ${word}`)) continue;
+          if (tag.endsWith(` own ${word}`)) continue;
           const tagWords = tag.split(word)[0].split(" ").filter(Boolean);
           const existingTag = (mergedTags[word] || "")
             .split(" ")

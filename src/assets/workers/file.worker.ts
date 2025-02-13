@@ -1,6 +1,7 @@
 self.onmessage = async function (event) {
   const apiUrl = event.data; // Expecting the API URL to be sent from the main thread
 
+  // handle loading files in batches
   try {
     const response = await fetch("/api/files", {
       method: "POST",

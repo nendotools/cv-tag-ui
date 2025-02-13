@@ -22,6 +22,9 @@ interface State {
   appliedFilters: Set<string>;
   filterPreview: Set<string>;
 
+  autoIncludeTags: string[];
+  autoExcludeTags: string[];
+
   sort: (typeof Sorts)[number];
   strictDuplicates: boolean;
   autoTagMerge: boolean;
@@ -44,6 +47,9 @@ export const useFiles = defineStore("files", {
     appliedFilters: new Set<string>(),
     filterPreview: new Set<string>(),
     sort: "name",
+
+    autoIncludeTags: [],
+    autoExcludeTags: [],
 
     strictDuplicates: false,
     autoTagMerge: false,
@@ -277,7 +283,14 @@ export const useFiles = defineStore("files", {
       return directories.innerDirectories;
     },
     async setDirectory(path: string) {
+      const { recall } = useRecall();
       this.directory = path;
+      const autoTags = recall(`autoTags:${path}`) || {
+        include: [],
+        exclude: [],
+      };
+      this.autoIncludeTags = autoTags.include;
+      this.autoExcludeTags = autoTags.exclude;
       await this.workerFetchFiles();
       this.files = [];
     },
@@ -339,14 +352,28 @@ export const useFiles = defineStore("files", {
 
     // bulk tag addition for all active files
     async bulkAddTag(tags: string[]) {
+      this.autoIncludeTags = [...new Set([...this.autoIncludeTags, ...tags])];
+      this.autoExcludeTags = this.autoExcludeTags.filter(
+        (t) => !tags.includes(t),
+      );
+      this.cacheBulkTags();
       for (const file of this.files) {
         const applicableTags = tags.filter(
           (t) => !file.highConfidenceTags.includes(t),
         );
         if (applicableTags.length > 0) {
-          this.addTag(file, applicableTags);
+          const index = this.files.findIndex((f) => f.path === file.path);
+          this.files[index].highConfidenceTags.push(...applicableTags);
         }
       }
+
+      await $fetch("/api/tags", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: { path: this.files.map((f) => f.path), add: tags, remove: [] },
+      });
     },
 
     async removeTag(file: ImageFile, tags: string[]) {
@@ -356,6 +383,7 @@ export const useFiles = defineStore("files", {
           fileIndex
         ].highConfidenceTags.filter((t) => !tags.includes(t));
         for (const t of tags) {
+          if (this.files[fileIndex].lowConfidenceTags.includes(t)) continue;
           this.files[fileIndex].lowConfidenceTags.push(t);
         }
       }
@@ -372,14 +400,38 @@ export const useFiles = defineStore("files", {
 
     // bulk tag removal for all active files
     async bulkRemoveTag(tags: string[]) {
+      this.autoExcludeTags = [...new Set([...this.autoExcludeTags, ...tags])];
+      this.autoIncludeTags = this.autoIncludeTags.filter(
+        (t) => !tags.includes(t),
+      );
+      this.cacheBulkTags();
       for (const file of this.files) {
         const applicableTags = tags.filter((t) =>
           file.highConfidenceTags.includes(t),
         );
         if (applicableTags.length > 0) {
-          this.removeTag(file, applicableTags);
+          const index = this.files.findIndex((f) => f.path === file.path);
+          this.files[index].highConfidenceTags = this.files[
+            index
+          ].highConfidenceTags.filter((t) => !applicableTags.includes(t));
         }
       }
+
+      await $fetch("/api/tags", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: { path: this.files.map((f) => f.path), add: [], remove: tags },
+      });
+    },
+
+    async cacheBulkTags() {
+      const { store } = useRecall();
+      store(`autoTags:${this.directory}`, {
+        include: this.autoIncludeTags,
+        exclude: this.autoExcludeTags,
+      });
     },
 
     async deleteFile(filePath: string) {
@@ -450,6 +502,10 @@ export const useFiles = defineStore("files", {
       if (fileIndex !== -1) {
         this.files[fileIndex] = file;
       }
+
+      this.addTag(file, this.autoIncludeTags);
+      this.removeTag(file, this.autoExcludeTags);
+
       if (this.autoTagMerge) {
         this.mergeTags(file);
       }
@@ -482,9 +538,9 @@ export const useFiles = defineStore("files", {
         const start = performance.now();
         await this.analyzeImage(file);
         const end = performance.now();
-        if (end - start < 500) {
+        if (end - start < 250) {
           await new Promise((resolve) =>
-            setTimeout(resolve, Math.max(0, 500 - (end - start))),
+            setTimeout(resolve, Math.max(0, 250 - (end - start))),
           );
         }
       }

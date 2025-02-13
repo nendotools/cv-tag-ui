@@ -257,8 +257,8 @@
           </div>
         </div>
 
-        <h2 class="text-lg p-2">Quick Filters</h2>
-        <div class="flex flex-row gap-2">
+        <h2 v-if="false" class="text-lg p-2">Quick Filters</h2>
+        <div v-if="false" class="flex flex-row gap-2">
           <UInput
             placeholder="Filter Name"
             v-model="newFilter"
@@ -379,6 +379,10 @@ onBeforeUnmount(() => {
   store("scanOnUpload", fileStore.scanOnUpload);
   store("strictDuplicates", fileStore.strictDuplicates);
   store("acceptCutoutResults", fileStore.acceptCutoutResults);
+  store(`autoTags:${fileStore.directory}`, {
+    include: fileStore.autoIncludeTags,
+    exclude: fileStore.autoExcludeTags,
+  });
 });
 
 const threshold = ref<number>(0);

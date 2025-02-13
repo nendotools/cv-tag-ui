@@ -1,5 +1,4 @@
 import argparse
-import io
 from pathlib import Path
 from rembg import remove, new_session
 from PIL import Image

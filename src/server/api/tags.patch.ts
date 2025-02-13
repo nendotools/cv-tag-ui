@@ -41,11 +41,13 @@ const editTags = async (
     setHeader(event, "Status", "400");
     return "No .txt file found";
   }
-  const tags = fs
-    .readFileSync(txtPath, "utf-8")
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter((tag) => tag !== "");
+  const tags = new Set(
+    fs
+      .readFileSync(txtPath, "utf-8")
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag !== ""),
+  );
 
   // This should actually be a non-fatal error, but we'll return a 400 status code for now
   if (!jsonExists) {
@@ -56,19 +58,19 @@ const editTags = async (
 
   // add tags should be added to the .txt file and high_tags in the .json file and removed from low_tags in the .json file
   for (const tag of add) {
-    tags.push(tag);
+    tags.add(tag);
     json.high[tag] = json.low[tag] ?? 0;
     delete json.low[tag];
   }
   // remove tags should be removed from the .txt file and high_tags in the .json file and added to low_tags in the .json file
   for (const tag of remove) {
-    tags.splice(tags.indexOf(tag), 1);
+    tags.delete(tag);
     json.low[tag] = json.high[tag] ?? 0;
     delete json.high[tag];
   }
 
   // write the updated tags to the .txt file
-  fs.writeFileSync(txtPath, tags.join(","));
+  fs.writeFileSync(txtPath, Array.from(tags).join(","));
 
   // write the updated tags to the .json file
   fs.writeFileSync(jsonPath, JSON.stringify(json));
