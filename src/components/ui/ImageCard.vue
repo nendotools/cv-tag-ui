@@ -56,11 +56,11 @@
                 :key="tag"
                 :label="tag"
                 :exists="true"
-                :simple="mode !== 'tag'"
+                :simple="!editMode"
                 :highlight="duplicateTags.includes(tag.split(' ').pop() || '')"
                 :class="{ 'cursor-pointer': mode === 'view' }"
                 @delete="fileStore.removeTag(file, [tag])"
-                @click.stop="$emit('set-focus-tag', tag)"
+                @click.stop="emitFocusTag(tag)"
               />
 
               <div class="col-start-1 col-span-full flex flex-row gap-2 mt-4">
@@ -82,7 +82,8 @@
                 :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
                 :disabled="
                   loaders.isLoading(Prefixes.ANALYZE + file.name) ||
-                  loaders.isQueued(Prefixes.ANALYZE + file.name)
+                  loaders.isQueued(Prefixes.ANALYZE + file.name) ||
+                  editMode
                 "
                 @click="$emit('analyze-image', file)"
               >
@@ -94,11 +95,23 @@
                 class="rounded-full p-2"
                 variant="solid"
                 size="xs"
-                :disabled="!hasDuplicates"
+                :disabled="!hasDuplicates || editMode"
                 :loading="loaders.isLoading(Prefixes.TAGMERGE + file.name)"
                 @click="attemptMergeTags"
               >
                 Merge Tags
+              </UButton>
+              <UButton
+                icon="fluent:edit-line-horizontal-3-20-regular"
+                color="primary"
+                class="rounded-full p-2"
+                variant="solid"
+                size="xs"
+                :disabled="!file.highConfidenceTags.length"
+                :loading="loaders.isLoading(Prefixes.TAGMERGE + file.name)"
+                @click="toggleEditMode"
+              >
+                Edit Tags
               </UButton>
               <h3 class="mt-3 text-sm font-semibold text-center">Edit Image</h3>
               <UButton
@@ -107,7 +120,7 @@
                 class="rounded-full p-2"
                 variant="solid"
                 size="xs"
-                :disabled="removingBackground"
+                :disabled="removingBackground || editMode"
                 :loading="removingThisBackground"
                 @click="$emit('remove-bg', file)"
               >
@@ -119,7 +132,7 @@
                 class="rounded-full p-2"
                 variant="solid"
                 size="xs"
-                :disabled="isSquare(file)"
+                :disabled="isSquare(file) || editMode"
                 @click="$emit('make-square', file)"
               >
                 Make Square
@@ -130,6 +143,7 @@
                 class="rounded-full p-2"
                 variant="solid"
                 size="xs"
+                :disabled="editMode"
                 @click="$emit('crop-file', file)"
               >
                 Crop Image
@@ -157,10 +171,10 @@
               :key="tag"
               :label="tag"
               :exists="false"
-              :simple="mode !== 'tag'"
+              :simple="!editMode"
               :class="{ 'cursor-pointer': mode === 'view' }"
               @add="fileStore.addTag(file, [tag])"
-              @click.stop="$emit('set-focus-tag', tag)"
+              @click.stop="emitFocusTag(tag)"
             />
 
             <div v-if="!file?.lowConfidenceTags?.length">
@@ -230,6 +244,16 @@ const emits = defineEmits<{
   (event: "make-square", file: ImageFile): void;
   (event: "remove-bg", file: ImageFile): void;
 }>();
+
+const editMode = ref(false);
+const toggleEditMode = () => {
+  editMode.value = !editMode.value;
+};
+
+const emitFocusTag = (tag: string) => {
+  if (editMode.value) return;
+  emits("set-focus-tag", tag);
+};
 
 const removingBackground = computed(() => {
   return loaders.hasActiveLoaders(Prefixes.REMOVEBG);

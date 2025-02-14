@@ -4,23 +4,6 @@
       <h1>Image Tagger</h1>
     </template>
 
-    <div class="flex flex-row gap-4">
-      <UButton
-        :color="mode === 'view' ? 'primary' : 'white'"
-        variant="link"
-        @click="mode = 'view'"
-      >
-        View
-      </UButton>
-      <UButton
-        :color="mode === 'tag' ? 'primary' : 'white'"
-        variant="link"
-        @click="mode = 'tag'"
-      >
-        Tag
-      </UButton>
-    </div>
-
     <template #right>
       <div class="flex flex-row gap-4 portrait:hidden">
         <UButton size="xs" variant="outline" @click="openDirectoryModal">

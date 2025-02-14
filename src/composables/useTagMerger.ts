@@ -23,6 +23,7 @@ export const useTagMerger = () => {
     "breasts",
     "choker",
     "ribbon",
+    "cardigan",
     "shirt",
     "skirt",
     "shorts",
