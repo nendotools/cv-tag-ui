@@ -15,4 +15,4 @@ fi
 source ".venv/bin/activate"
 
 # Start the Nuxt development server
-nuxt start "$@"
+yarn nuxt start "$@"

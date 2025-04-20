@@ -8,8 +8,6 @@ fi
 
 # Activate the virtual environment
 source "./.venv/bin/activate"
-which python
-which pip
 
 # Start the Nuxt development server
-nuxt dev "$@"
+yarn nuxt dev "$@"
