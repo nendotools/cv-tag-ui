@@ -2,8 +2,9 @@ export const useTagMerger = () => {
   const rootTags: string[] = [
     "sky",
     "hairband",
-    "pubic hair",
+    "face",
     "hair",
+    "pubic hair",
     "hair bun",
     "hair ornament",
     "braids",
@@ -198,10 +199,12 @@ export const useTagMerger = () => {
     const mergedTags: Record<string, string> = {};
 
     for (const word of rootTags) {
+      const filteredTags = rootTags.filter(t => t != word);
       for (const tag of tags) {
         if (tag.endsWith(word)) {
           // if the tag matches a different word, skip it
-          if (rootTags.indexOf(tag) > -1 && tag !== word) continue;
+          if (rootTags.includes(tag) && tag !== word) continue;
+          if (filteredTags.some(t => !word.endsWith(t) && tag.endsWith(t))) continue;
           if (tag !== word && !tag.includes(" " + word)) continue;
           if (tag.endsWith(` on ${word}`)) continue;
           if (tag.endsWith(`ing ${word}`)) continue;

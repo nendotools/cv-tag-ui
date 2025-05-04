@@ -30,6 +30,35 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     const fullPath = `${p}/${file.name}`;
+    // need to detect if file is a symlink
+    if (file.isSymbolicLink()) {
+      // detect if symlink is a directory or file and set type accordingly
+      console.log(`Symlink detected: ${fullPath}`);
+      console.log(`link evaluated to: ${fs.realpathSync(fullPath)}`);
+      const linkPath = fs.realpathSync(fullPath);
+      if (fs.existsSync(linkPath)) {
+        const stats = fs.lstatSync(linkPath);
+        if (stats.isDirectory()) {
+          dirMap.push({
+            type: "directory",
+            fullPath,
+            name: file.name,
+            hidden: file.name.startsWith("."),
+          });
+        } else if (stats.isFile()) {
+          const isKohya = detectKohya(linkPath);
+          const extension = file.name.split(".").pop() || "";
+          dirMap.push({
+            type: "file",
+            fullPath,
+            name: file.name,
+            extension,
+            hidden: file.name.startsWith("."),
+            isKohya,
+          });
+        }
+      }
+    }
     if (file.isDirectory()) {
       dirMap.push({
         type: "directory",

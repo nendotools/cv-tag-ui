@@ -1,19 +1,13 @@
 <template>
   <UCard>
-    <div
-      class="grid items-center landscape:grid-cols-5 portrait:grid-cols-1 grid-rows-auto"
-    >
+    <div class="grid items-center landscape:grid-cols-5 portrait:grid-cols-1 grid-rows-auto">
       <!-- Image and Image tools -->
-      <div
-        class="relative flex flex-col items-stretch justify-center overflow-hidden col-span-2"
-      >
+      <div class="relative flex flex-col items-stretch justify-center overflow-hidden col-span-2">
         <img :src="file.resource" />
       </div>
 
       <!-- File Details -->
-      <div
-        class="flex flex-col self-start ml-4 landscape:col-start-3 landscape:col-end-6 gap-2"
-      >
+      <div class="flex flex-col self-start ml-4 landscape:col-start-3 landscape:col-end-6 gap-2">
         <p class="text-sm font-semibold">{{ file.name }}</p>
         <p class="text-xs text-gray-500">{{ file.path }}</p>
         <div class="text-xs flex flex-row items-center">
@@ -27,175 +21,83 @@
         </div>
         <div>
           <UHorizontalNavigation :links="links" />
-          <div
-            v-show="getTagOptCache() === OptCategories.RANK"
-            class="ml-4 flex flex-col gap-2 m-4"
-          >
-            <ATag
-              v-for="(score, tag) in file.confidenceKeys"
-              :key="tag"
-              :label="`${tag} (${(score * 100).toFixed(1)}%)`"
-              :exists="true"
-              :simple="true"
-            />
+          <div v-show="getTagOptCache() === OptCategories.RANK" class="ml-4 flex flex-col gap-2 m-4">
+            <ATag v-for="(score, tag) in file.confidenceKeys" :key="tag"
+              :label="`${tag} (${(score * 100).toFixed(1)}%)`" :exists="true" :simple="true" />
 
             <div v-if="!file.tags.length && !file?.confidenceKeys?.length">
               <p class="text-zinc-50/25">None</p>
             </div>
           </div>
-          <div
-            v-show="getTagOptCache() === OptCategories.ASSIGNED"
-            class="ml-4 grid grid-rows-1 grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2 m-4"
-          >
-            <div
-              v-if="file?.highConfidenceTags.length"
-              class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 grid-rows-5 col-span-1 md:col-span-2 lg:col-span-3 gap-2"
-            >
-              <ATag
-                v-for="tag in [...file?.highConfidenceTags]"
-                :key="tag"
-                :label="tag"
-                :exists="true"
-                :simple="!editMode"
-                :highlight="duplicateTags.includes(tag.split(' ').pop() || '')"
-                :class="{ 'cursor-pointer': mode === 'view' }"
-                @delete="fileStore.removeTag(file, [tag])"
-                @click.stop="emitFocusTag(tag)"
-              />
+          <div v-show="getTagOptCache() === OptCategories.ASSIGNED"
+            class="ml-4 grid grid-rows-1 grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2 m-4">
+            <div v-if="file?.highConfidenceTags.length"
+              class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 grid-rows-5 col-span-1 md:col-span-2 lg:col-span-3 gap-2">
+              <ATag v-for="tag in [...file?.highConfidenceTags]" :key="tag" :label="tag" :exists="true"
+                :simple="!editMode" :highlight="duplicateTags.includes(tag.split(' ').pop() || '')"
+                :class="{ 'cursor-pointer': mode === 'view' }" @delete="fileStore.removeTag(file, [tag])"
+                @click.stop="emitFocusTag(tag)" />
 
               <div class="col-start-1 col-span-full flex flex-row gap-2 mt-4">
                 <h4>Add Tags</h4>
-                <TagInput
-                  :tags="file.highConfidenceTags"
-                  @add="(tag: string) => fileStore.addTag(file, [tag])"
-                />
+                <TagInput :tags="file.highConfidenceTags" @add="(tag: string) => fileStore.addTag(file, [tag])" />
               </div>
             </div>
-            <div class="flex flex-col items-stretch gap-2 m-4">
+            <div class="flex flex-col items-stretch gap-2 m-4 col-span-2">
               <h3 class="text-sm font-semibold text-center">Tagging</h3>
-              <UButton
-                icon="fluent:image-search-20-regular"
-                color="primary"
-                class="rounded-full p-2"
-                variant="solid"
-                size="xs"
-                :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)"
-                :disabled="
-                  loaders.isLoading(Prefixes.ANALYZE + file.name) ||
+              <UButton icon="fluent:image-search-20-regular" color="primary" class="rounded-full p-2" variant="solid"
+                size="xs" :loading="loaders.isLoading(Prefixes.ANALYZE + file.name)" :disabled="loaders.isLoading(Prefixes.ANALYZE + file.name) ||
                   loaders.isQueued(Prefixes.ANALYZE + file.name) ||
                   editMode
-                "
-                @click="$emit('analyze-image', file)"
-              >
+                  " @click="$emit('analyze-image', file)">
                 Analyze Image
               </UButton>
-              <UButton
-                icon="fluent:arrow-join-20-regular"
-                color="primary"
-                class="rounded-full p-2"
-                variant="solid"
-                size="xs"
-                :disabled="!hasDuplicates || editMode"
-                :loading="loaders.isLoading(Prefixes.TAGMERGE + file.name)"
-                @click="attemptMergeTags"
-              >
+              <UButton icon="fluent:arrow-join-20-regular" color="primary" class="rounded-full p-2" variant="solid"
+                size="xs" :disabled="!hasDuplicates || editMode"
+                :loading="loaders.isLoading(Prefixes.TAGMERGE + file.name)" @click="attemptMergeTags">
                 Merge Tags
               </UButton>
-              <UButton
-                icon="fluent:edit-line-horizontal-3-20-regular"
-                color="primary"
-                class="rounded-full p-2"
-                variant="solid"
-                size="xs"
-                :disabled="!file.highConfidenceTags.length"
-                :loading="loaders.isLoading(Prefixes.TAGMERGE + file.name)"
-                @click="toggleEditMode"
-              >
+              <UButton icon="fluent:edit-line-horizontal-3-20-regular" color="primary" class="rounded-full p-2"
+                variant="solid" size="xs" :disabled="!file.highConfidenceTags.length"
+                :loading="loaders.isLoading(Prefixes.TAGMERGE + file.name)" @click="toggleEditMode">
                 Edit Tags
               </UButton>
               <h3 class="mt-3 text-sm font-semibold text-center">Edit Image</h3>
-              <UButton
-                icon="fluent:video-background-effect-20-regular"
-                color="emerald"
-                class="rounded-full p-2"
-                variant="solid"
-                size="xs"
-                :disabled="removingBackground || editMode"
-                :loading="removingThisBackground"
-                @click="$emit('remove-bg', file)"
-              >
+              <UButton icon="fluent:video-background-effect-20-regular" color="emerald" class="rounded-full p-2"
+                variant="solid" size="xs" :disabled="removingBackground || editMode" :loading="removingThisBackground"
+                @click="$emit('remove-bg', file)">
                 Remove Background
               </UButton>
-              <UButton
-                icon="fluent:color-background-20-regular"
-                color="emerald"
-                class="rounded-full p-2"
-                variant="solid"
-                size="xs"
-                :disabled="isSquare(file) || editMode"
-                @click="$emit('make-square', file)"
-              >
+              <UButton icon="fluent:color-background-20-regular" color="emerald" class="rounded-full p-2"
+                variant="solid" size="xs" :disabled="isSquare(file) || editMode" @click="$emit('make-square', file)">
                 Make Square
               </UButton>
-              <UButton
-                icon="fluent:crop-16-regular"
-                color="emerald"
-                class="rounded-full p-2"
-                variant="solid"
-                size="xs"
-                :disabled="editMode"
-                @click="$emit('crop-file', file)"
-              >
+              <UButton icon="fluent:crop-16-regular" color="emerald" class="rounded-full p-2" variant="solid" size="xs"
+                :disabled="editMode" @click="$emit('crop-file', file)">
                 Crop Image
               </UButton>
               <hr class="w-1/2 self-center my-4" />
-              <UButton
-                icon="fluent:delete-16-regular"
-                color="red"
-                class="rounded-full p-2"
-                variant="solid"
-                size="xs"
-                @click="$emit('delete-file', file)"
-              >
+              <UButton icon="fluent:delete-16-regular" color="red" class="rounded-full p-2" variant="solid" size="xs"
+                @click="$emit('delete-file', file)">
                 Delete Image
               </UButton>
             </div>
           </div>
 
-          <div
-            v-show="getTagOptCache() === OptCategories.EXCLUDED"
-            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 grid-rows-5 gap-2"
-          >
-            <ATag
-              v-for="tag in [...file?.lowConfidenceTags]"
-              :key="tag"
-              :label="tag"
-              :exists="false"
-              :simple="!editMode"
-              :class="{ 'cursor-pointer': mode === 'view' }"
-              @add="fileStore.addTag(file, [tag])"
-              @click.stop="emitFocusTag(tag)"
-            />
+          <div v-show="getTagOptCache() === OptCategories.EXCLUDED"
+            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 grid-rows-5 gap-2">
+            <ATag v-for="tag in [...file?.lowConfidenceTags]" :key="tag" :label="tag" :exists="false"
+              :simple="!editMode" :class="{ 'cursor-pointer': mode === 'view' }" @add="fileStore.addTag(file, [tag])"
+              @click.stop="emitFocusTag(tag)" />
 
             <div v-if="!file?.lowConfidenceTags?.length">
               <p class="text-zinc-50/25">None</p>
             </div>
           </div>
 
-          <div
-            v-show="getTagOptCache() === OptCategories.MOVE"
-            class="m-4 flex flex-col max-w-xs gap-2"
-          >
-            <UButton
-              v-for="(opt, index) in adjacentFolders"
-              :key="index"
-              icon="fluent:folder-20-regular"
-              color="indigo"
-              class="rounded-full p-2"
-              variant="solid"
-              size="xs"
-              @click="fileStore.moveFiles(file, opt.path)"
-            >
+          <div v-show="getTagOptCache() === OptCategories.MOVE" class="m-4 flex flex-col max-w-xs gap-2">
+            <UButton v-for="(opt, index) in adjacentFolders" :key="index" icon="fluent:folder-20-regular" color="indigo"
+              class="rounded-full p-2" variant="solid" size="xs" @click="fileStore.moveFiles(file, opt.path)">
               Move to {{ opt.name }}
             </UButton>
           </div>
@@ -356,7 +258,7 @@ const links = computed(() => [
     avatar: {
       icon:
         loaders.hasActiveLoaders(Prefixes.ANALYZE + props.file.name) ||
-        loaders.hasQueuedLoaders(Prefixes.ANALYZE + props.file.name)
+          loaders.hasQueuedLoaders(Prefixes.ANALYZE + props.file.name)
           ? "fluent:tag-search-20-filled"
           : "fluent:tag-search-20-regular",
       chipColor: loaders.hasQueuedLoaders(Prefixes.ANALYZE + props.file.name)
