@@ -6,8 +6,9 @@ import * as fs from "fs";
 const Extensions = ["jpg", "jpeg", "png", "bmp", "webp"] as const;
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { path } = await readBody(event);
-  var isValid = false;
+  const { path: rawPath } = await readBody(event);
+  const path = fs.realpathSync(rawPath);
+  let isValid = false;
   fs.stat(path, (err, stats) => {
     if (err) {
       console.error(err);

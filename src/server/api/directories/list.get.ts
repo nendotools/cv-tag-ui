@@ -6,8 +6,8 @@ export default defineEventHandler(async (event: H3Event) => {
   // get path from query
   const q = getQuery<{ path: string }>(event);
   const path = decodeURIComponent(q.path);
-  var isValid = fs.existsSync(path);
-  var isDir = fs.statSync(path).isDirectory();
+  const isValid = fs.existsSync(path);
+  const isDir = fs.statSync(path).isDirectory();
   if (!isDir) {
     setResponseStatus(event, 400);
     return {
@@ -15,17 +15,25 @@ export default defineEventHandler(async (event: H3Event) => {
     };
   }
   const p = path === "/" ? "" : path;
-  console.log(`Listing directory: ${p}`);
 
   const dirMap: (FSDirectory | FSFile)[] = [];
-  const files = fs.readdirSync(path, { withFileTypes: true });
+  const realP = fs.realpathSync(p || '/')
+  const files = fs.readdirSync(realP, { withFileTypes: true });
   for (const file of files) {
     // check permission and skip if not accessible
+    const sub = `${p}/${file.name}`;
     try {
-      fs.accessSync(`${p}/${file.name}`, fs.constants.W_OK);
-    } catch (err) {
-      if (file.name !== "home") {
-        continue;
+      if (['tmp'].includes(file.name)) continue
+      fs.accessSync(sub, fs.constants.W_OK);
+    } catch {
+      // Darwin, allow /Users
+      // Linux, allow /home
+      if (process.platform === 'darwin' && !['/Users', '/Volumes'].includes(sub)) {
+        continue
+      } else if (process.platform === 'linux' && sub !== '/home') {
+        continue
+      } else if (!['darwin', 'linux'].includes(process.platform)) {
+        continue
       }
     }
 
@@ -103,14 +111,11 @@ const detectKohya = (path: string) => {
     const data = fs.readFileSync(path, "utf8");
     const json = JSON.parse(data);
     if (
-      json.hasOwnProperty("LoRA_type") &&
-      json.hasOwnProperty("epoch") &&
-      json.hasOwnProperty("output_name") &&
-      json.hasOwnProperty("train_data_dir")
+      ["LoRA_type", "epoch", "output_name", "train_data_dir"].every(p => Object.getOwnPropertyDescriptor(json, p))
     ) {
       return true;
     }
-  } catch (err) {
+  } catch {
     return false;
   }
   return false;

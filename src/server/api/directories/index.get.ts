@@ -4,8 +4,8 @@ import * as fs from "fs";
 // Provides directory summary information for image metadata
 export default defineEventHandler(async (event: H3Event) => {
   let { path } = getQuery<{ path: string }>(event);
-  path = decodeURIComponent(path);
-  var isValid = false;
+  path = fs.realpathSync(decodeURIComponent(path));
+  let isValid = false;
   fs.stat(path, (err, stats) => {
     if (err) {
       console.error(err);
